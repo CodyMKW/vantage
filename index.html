@@ -416,26 +416,64 @@ const state={items:{},stores:{},wish:store.get('wish',{}),cart:store.get('cart',
 
 /* ---------- API ---------- */
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function get(url,ttl=600){
- const key='vantage:c:'+url.replace(/([?&])key=[^&]*/,'$1key=_');
- try{const c=JSON.parse(sessionStorage.getItem(key)||'null');if(c&&Date.now()-c.t<ttl*1000)return c.d}catch{}
- let r;
- for(let i=0;i<4;i++){
+/* CheapShark rate-limits bursts, and its 429 response has no CORS headers, so the browser
+   reports it as a CORS failure (fetch just throws). So: one request at a time per host with a
+   gap between them, retry with backoff on any failure, cache results in localStorage, and fall
+   back to the last good (stale) copy if the network still fails. */
+const GAPS={'www.cheapshark.com':450,'gamerpower.com':300,'www.gamerpower.com':300};
+const lanes={},inflight={};
+const cacheKey=url=>'vantage:c:'+url.replace(/([?&])key=[^&]*/,'$1key=_');
+function cacheRead(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}}
+function cacheWrite(k,d){
+ const v=JSON.stringify({t:Date.now(),d});
+ try{localStorage.setItem(k,v)}catch{
   try{
-   r=await fetch(url);
-   if(r.status!==429)break;
-  }catch(err){
-   if(i===3)throw err;
-  }
-  await sleep(1500*(i+1));
+   const old=[];for(let i=0;i<localStorage.length;i++){const x=localStorage.key(i);if(x&&x.startsWith('vantage:c:'))old.push(x)}
+   old.forEach(x=>localStorage.removeItem(x));localStorage.setItem(k,v);
+  }catch{}
  }
- if(!r||!r.ok)throw new Error('HTTP '+(r?.status||'Network'));
- const d=await r.json();
- try{sessionStorage.setItem(key,JSON.stringify({t:Date.now(),d}))}catch{}
- return d;
+}
+function lane(host,fn){
+ const gap=GAPS[host];
+ if(!gap)return fn();
+ const run=(lanes[host]||Promise.resolve()).then(fn);
+ lanes[host]=run.catch(()=>{}).then(()=>sleep(gap));
+ return run;
+}
+async function fetchJson(url){
+ let err;
+ for(let i=0;i<4;i++){
+  let retry=true;
+  try{
+   const r=await fetch(url);
+   if(r.ok)return await r.json();
+   err=new Error('HTTP '+r.status);
+   retry=r.status===429||r.status>=500;
+  }catch(e){err=e}
+  if(!retry)break;
+  if(i<3)await sleep(1500*(i+1));
+ }
+ throw err;
+}
+async function get(url,ttl=600){
+ const k=cacheKey(url),c=cacheRead(k);
+ if(c&&Date.now()-c.t<ttl*1000)return c.d;
+ if(inflight[k])return inflight[k];
+ const host=new URL(url).host;
+ const p=(async()=>{
+  try{
+   const d=await lane(host,()=>fetchJson(url));
+   cacheWrite(k,d);return d;
+  }catch(e){
+   console.warn('[Vantage] request failed:',url.replace(/([?&])key=[^&]*/,'$1key=…'),e&&e.message);
+   if(c)return c.d;
+   throw e;
+  }
+ })().finally(()=>{delete inflight[k]});
+ inflight[k]=p;return p;
 }
 const api=(path,ttl)=>get(API+path,ttl);
-const qs=o=>{const p=new URLSearchParams(Object.fromEntries(Object.entries(o).filter(([,v])=>v!==''&&v!=null))).toString();return p?'?'+p:'';};
+const qs=o=>'?'+new URLSearchParams(Object.fromEntries(Object.entries(o).filter(([,v])=>v!==''&&v!=null))).toString();
 const norm=d=>({id:d.gameID,dealID:d.dealID,title:d.title||d.external||'Untitled',sale:+d.salePrice,normal:+d.normalPrice,savings:Math.round(+d.savings||0),mc:+d.metacriticScore||0,pct:+d.steamRatingPercent||0,rtext:d.steamRatingText||'',rcount:+d.steamRatingCount||0,app:d.steamAppID||'',release:+d.releaseDate||0,store:d.storeID,thumb:d.thumb||''});
 function dedupe(list){const m=new Map();for(const it of list){const o=m.get(it.id);if(!o||it.sale<o.sale)m.set(it.id,it)}return[...m.values()]}
 function reg(list){list.forEach(it=>{state.items[it.id]={...(state.items[it.id]||{}),...it}});return list}
@@ -509,7 +547,7 @@ function addCart(id){
 
 /* ---------- Extra sources: RAWG (Nintendo catalog) + GamerPower (giveaways) ---------- */
 const RAWG='https://api.rawg.io/api';
-const GP='https://www.gamerpower.com/api/giveaways';
+const GP='https://gamerpower.com/api/giveaways';
 const rawgKey=()=>String(RAWG_KEY||store.get('rawgKey','')||'').trim();
 const rawg=(path,ttl=600)=>get(RAWG+path+(path.includes('?')?'&':'?')+'key='+encodeURIComponent(rawgKey()),ttl);
 const safeUrl=u=>/^https?:\/\//i.test(u||'')?u:'#';
@@ -518,21 +556,11 @@ const rawgImg=(u,w)=>u?u.replace(/\/media\/(?!resize\/|crop\/)/,'/media/resize/'
 const ninArts=(u,w)=>u?[rawgImg(u,w),u]:[];
 const nnorm=g=>({kind:'nin',id:'r'+g.id,rid:g.id,title:g.name||'Untitled',arts:ninArts(g.background_image,640),heroArts:ninArts(g.background_image,1280),mc:+g.metacritic||0,release:g.released||'',genres:(g.genres||[]).map(x=>x.name)});
 const ninSub=it=>[it.release?it.release.slice(0,4):'TBA',(it.genres||[])[0]].filter(Boolean).join(' · ');
+const GP_ALT='https://www.gamerpower.com/api/giveaways';
 const gpList=async p=>{
- const targetUrl=GP+qs(p);
- try{
-  const r=await get(targetUrl,300);
-  if(Array.isArray(r))return r;
- }catch(e){}
- try{
-  const proxyUrl='https://api.allorigins.win/raw?url='+encodeURIComponent(targetUrl);
-  const res=await fetch(proxyUrl);
-  if(res.ok){
-   const data=await res.json();
-   if(Array.isArray(data))return data;
-  }
- }catch(err){}
- return [];
+ let r;
+ try{r=await get(GP+qs(p),300)}catch(e){r=await get(GP_ALT+qs(p),300)}
+ return Array.isArray(r)?r:[];
 };
 function endTxt(d){const x=new Date(String(d).replace(' ','T'));return isNaN(x)?'':'Ends '+x.toLocaleDateString(undefined,{month:'short',day:'numeric'})}
 function giveCard(g){
@@ -599,34 +627,34 @@ async function loadHome(){
  const rowSh=r=>sh('row-'+r.key,r.title,`<a data-preset="${r.preset}">See all</a>`);
  $('#rows').innerHTML=sh('row-give','Free to claim right now','<a href="#/free">See all</a>',true)+rowSh(ROWS[0])+rowSh(ROWS[1])+(rawgKey()?sh('row-nin','Top rated on Nintendo Switch','<a href="#/nintendo">See all</a>',true):'')+ROWS.slice(2).map(rowSh).join('');
  loadExtras();
- await loadStores();
- const results={};
- const jobs=ROWS.map(async(r,i)=>{
-  await sleep(i*120);
-  try{
-   const raw=await api('/deals'+qs(r.q));
-   let list=dedupe(reg((Array.isArray(raw)?raw:[]).map(norm)));
-   if(r.filter)list=list.filter(r.filter);
-   list=list.filter(it=>it.app||it.thumb).slice(0,20);
-   results[r.key]=list;
+ $('#hero').innerHTML='<div class="hero-main sk"></div><div class="hero-side"></div>';
+ const storesP=loadStores();
+ // Requests go out one at a time (see get()); this order decides which rows fill in first.
+ const jobs={};
+ ['rated','top','free','under10','savings'].map(k=>ROWS.find(r=>r.key===k)).forEach(r=>{
+  jobs[r.key]=(async()=>{
    const sec=$('#row-'+r.key);
-   if(!list.length){sec.remove();return}
-   $('.track',sec).innerHTML=list.map(it=>card(it)).join('');
-  }catch(e){
-   const sec=$('#row-'+r.key);if(!sec)return;
-   $('.track',sec).innerHTML=`<div class="err">Couldn't load this section. <button class="btn sm" data-retry>Retry</button></div>`;
-  }
+   try{
+    let list=dedupe(reg((await api('/deals'+qs(r.q))).map(norm)));
+    if(r.filter)list=list.filter(r.filter);
+    list=list.filter(it=>it.app||it.thumb).slice(0,20);
+    if(!list.length){sec&&sec.remove();return list}
+    if(sec)$('.track',sec).innerHTML=list.map(it=>card(it)).join('');
+    return list;
+   }catch(e){
+    if(sec)$('.track',sec).innerHTML=`<div class="err">Couldn't load this section. <button class="btn sm" data-retry>Retry</button></div>`;
+    return null;
+   }
+  })();
  });
- // hero from best data we have
- try{
-  const raw=await api('/deals'+qs({pageSize:40,sortBy:'Metacritic',desc:1,onSale:1,metacritic:80,lowerPrice:1}));
-  const feat=dedupe(reg((Array.isArray(raw)?raw:[]).map(norm))).filter(i=>i.app&&i.savings>=25);
-  heroList=feat.sort((a,b)=>b.mc*0.6+b.savings*0.4-(a.mc*0.6+a.savings*0.4)).slice(0,5);
- }catch{}
- await Promise.all(jobs);
- if(heroList.length<3){heroList=[...heroList,...(results.top||[]).filter(i=>i.app&&!heroList.find(h=>h.id===i.id))].slice(0,5)}
+ // The hero reuses the "critically acclaimed" results instead of making its own request.
+ const pick=l=>(l||[]).filter(i=>i.app&&i.savings>=25).sort((a,b)=>b.mc*0.6+b.savings*0.4-(a.mc*0.6+a.savings*0.4)).slice(0,5);
+ let hl=pick(await jobs.rated);
+ if(hl.length<3){const top=await jobs.top;hl=[...hl,...(top||[]).filter(i=>i.app&&!hl.find(h=>h.id===i.id))].slice(0,5)}
+ await storesP;
+ heroList=hl;
  if(heroList.length){heroIdx=0;renderHero()}
- else $('#hero').innerHTML=`<div class="err" style="grid-column:1/-1">Couldn't reach the deals service. <button class="btn sm" onclick="location.reload()">Reload</button></div>`;
+ else $('#hero').innerHTML=`<div class="err" style="grid-column:1/-1">Couldn't reach the deals service. <button class="btn sm" data-retry>Retry</button></div>`;
 }
 function renderHero(){
  clearTimeout(heroTimer);
@@ -665,8 +693,13 @@ let bPage=0,bSeen=new Set(),bToken=0,bInit=false,bLoading=false;
 function initBrowse(){
  if(bInit)return;bInit=true;
  $('#fSort').innerHTML=Object.keys(SORTS).map(k=>`<option>${k}</option>`).join('');
- const ids=Object.keys(state.stores).sort((a,b)=>storeName(a).localeCompare(storeName(b)));
- $('#fStore').innerHTML='<option value="">All stores</option>'+ids.map(id=>`<option value="${id}">${esc(storeName(id))}</option>`).join('');
+ const fillStores=()=>{
+  const ids=Object.keys(state.stores).sort((a,b)=>storeName(a).localeCompare(storeName(b)));
+  $('#fStore').innerHTML='<option value="">All stores</option>'+ids.map(id=>`<option value="${id}">${esc(storeName(id))}</option>`).join('');
+  $('#fStore').value=F.store;
+ };
+ fillStores();
+ if(!Object.keys(state.stores).length)loadStores().then(fillStores);
  const bind=(id,key,type)=>{
   const el=$(id);
   el.addEventListener(type==='chk'?'change':type==='text'?'input':'change',()=>{
@@ -691,7 +724,6 @@ async function loadBrowse(reset){
  try{
   const raw=await api('/deals'+qs(q),300);
   if(tok!==bToken)return;
-  if(!Array.isArray(raw))throw new Error('Invalid response');
   const list=reg(raw.map(norm)).filter(it=>{if(bSeen.has(it.id))return false;bSeen.add(it.id);return true});
   if(reset)$('#bGrid').innerHTML='';
   $('#bGrid').insertAdjacentHTML('beforeend',list.map(it=>card(it)).join(''));
@@ -699,7 +731,7 @@ async function loadBrowse(reset){
   $('#bMore').hidden=raw.length<24;bPage++;
  }catch(e){
   if(tok!==bToken)return;
-  if(reset)$('#bGrid').innerHTML='<div class="err" style="grid-column:1/-1">Couldn\'t load games. <button class="btn sm" data-retry-browse>Retry</button></div>';
+  if(reset)$('#bGrid').innerHTML='<div class="err" style="grid-column:1/-1">Couldn\'t load games. The price service may be busy. <button class="btn sm" data-retry-browse>Retry</button></div>';
   else toast('Couldn\'t load more — try again');
  }finally{if(tok===bToken){bLoading=false;$('#bMore').disabled=false}}
 }
@@ -778,7 +810,7 @@ async function openGame(id){
       <a class="btn sm" href="${redirect(d.dealID)}" target="_blank" rel="noopener">Get ${ICON.ext}</a></div>`).join('')}</div>
    </div>
    <aside class="buy">
-    <div class="bp">${best.savings>0?`<span class="off">-${best.savings}\%</span><s>${fmt(best.retail)}</s>`:''}<b>${fmt(best.price)}</b></div>
+    <div class="bp">${best.savings>0?`<span class="off">-${best.savings}%</span><s>${fmt(best.retail)}</s>`:''}<b>${fmt(best.price)}</b></div>
     <div class="bs">Best price at ${storeLogo(best.store)?`<img src="${esc(storeLogo(best.store))}" alt="">`:''}<b style="color:var(--txt)">${esc(storeName(best.store))}</b></div>
     <a class="btn primary" href="${redirect(best.dealID)}" target="_blank" rel="noopener">${best.price===0?'Claim for free':'Buy now'} ${ICON.ext}</a>
     <button class="btn" data-cart="${esc(id)}">${ICON.cart}Add to cart</button>
@@ -867,7 +899,8 @@ document.addEventListener('click',e=>{
  if(t.closest('[data-retry]')){state.homeLoaded=false;loadHome();return}
  if(t.closest('[data-retry-browse]')){loadBrowse(true);return}
  if(el=t.closest('[data-nin-tab]')){NIN.tab=el.dataset.ninTab;NIN.q='';$('#ninQ').value='';$$('[data-nin-tab]').forEach(b=>b.classList.toggle('on',b===el));loadNin(true);return}
- if(el=t.closest('[data-gp-plat]')){GPS.plat=el.dataset.gpPlat;$$('[data-gp-plat]').forEach(b=>b.classList.toggle('on',b===el));loadFree();return} if(el=t.closest('[data-gp-type]')){GPS.type=el.dataset.gpType;$$('[data-gp-type]').forEach(b=>b.classList.toggle('on',b===el));loadFree();return}
+ if(el=t.closest('[data-gp-plat]')){GPS.plat=el.dataset.gpPlat;$$('[data-gp-plat]').forEach(b=>b.classList.toggle('on',b===el));loadFree();return}
+ if(el=t.closest('[data-gp-type]')){GPS.type=el.dataset.gpType;$$('[data-gp-type]').forEach(b=>b.classList.toggle('on',b===el));loadFree();return}
  if(t.closest('[data-retry-nin]')){loadNin(true);return}
  if(t.closest('[data-retry-gp]')){loadFree();return}
  if(t.closest('#rawgSave')){const v=$('#rawgKeyIn').value.trim();if(!v){toast('Paste a key first');return}store.set('rawgKey',v);location.reload();return}
@@ -959,7 +992,7 @@ async function openNin(rid){
   const inW=!!state.wish[id];
   $('#mbox').innerHTML=`
   <div class="mhero">${img(it,'hero')}<button class="x" data-close aria-label="Close">${ICON.x}</button>
-   <div class="in"><h2>${esc(it.title)}</h2><div class="chips">${it.mc?`<span class="chip mc ${mcClass(it.mc)}">Metacritic ${it.mc}</span>`:''}${g.esrb_rating?`<span class="chip">${esc(g.esrb_rating.name)}</span>`:''}${g.rating?`<span class="chip">${esc(g.rating)}/5 ·${(+g.ratings_count||0).toLocaleString()} ratings</span>`:''}</div></div></div>
+   <div class="in"><h2>${esc(it.title)}</h2><div class="chips">${it.mc?`<span class="chip mc ${mcClass(it.mc)}">Metacritic ${it.mc}</span>`:''}${g.esrb_rating?`<span class="chip">${esc(g.esrb_rating.name)}</span>`:''}${g.rating?`<span class="chip">${esc(g.rating)}/5 · ${(+g.ratings_count||0).toLocaleString()} ratings</span>`:''}</div></div></div>
   <div class="mbody">
    <div>
     <div class="facts">
@@ -975,7 +1008,7 @@ async function openNin(rid){
    </div>
    <aside class="buy">
     <div class="bs"><b style="color:var(--txt)">Where to buy</b></div>
-    ${links.length?links.map((l,i)=>`<a class="btn ${i===0?'primary':''}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.name)}${ICON.ext}</a>`).join(''):'<p class="mut small">No store links are listed for this game yet.</p>'}
+    ${links.length?links.map((l,i)=>`<a class="btn ${i===0?'primary':''}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.name)} ${ICON.ext}</a>`).join(''):'<p class="mut small">No store links are listed for this game yet.</p>'}
     <p class="mut small">Nintendo sets prices per region on the eShop, so check the store page for today's price.</p>
     <button class="btn ghost ${inW?'on':''}" data-wish="${esc(id)}">${ICON.heart}${inW?'In wishlist':'Add to wishlist'}</button>
     <div class="links">${g.metacritic_url?`<a href="${esc(safeUrl(g.metacritic_url))}" target="_blank" rel="noopener">Metacritic</a>`:''}${g.website?`<a href="${esc(safeUrl(g.website))}" target="_blank" rel="noopener">Official site</a>`:''}</div>
@@ -1008,7 +1041,7 @@ async function loadFree(){
   $('#gpCount').textContent=list.length?list.length+' active giveaway'+(list.length>1?'s':''):'';
  }catch(e){
   if(tok!==GPS.tok)return;
-  grid.innerHTML='<div class="err" style="grid-column:1/-1">Couldn\'t load giveaways. <button class="btn sm" data-retry-gp>Retry</button></div>';
+  grid.innerHTML=`<div class="err" style="grid-column:1/-1">Couldn't load giveaways${e&&e.message?' ('+esc(e.message)+')':''}. If you use an ad blocker or privacy extension, try allowing gamerpower.com. <button class="btn sm" data-retry-gp>Retry</button></div>`;
  }
 }
 
@@ -1016,7 +1049,10 @@ async function loadFree(){
 const VIEWS=['home','browse','nintendo','free','wishlist'];
 function showView(name){
  if(state.view!==name){
-  VIEWS.forEach(v=>$('#'+v).hidden=v!==name); state.view=name;window.scrollTo(0,0); } $$('nav a').forEach(a=>a.classList.toggle('on',a.dataset.nav===name));
+  VIEWS.forEach(v=>$('#'+v).hidden=v!==name);
+  state.view=name;window.scrollTo(0,0);
+ }
+ $$('nav a').forEach(a=>a.classList.toggle('on',a.dataset.nav===name));
  if(name==='home')loadHome();
  if(name==='browse'){
   initBrowse();syncFilters();
