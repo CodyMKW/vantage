@@ -371,7 +371,7 @@ footer a{color:var(--acc2)}
 
 <footer>
  <div class="wrap">
-  <p><b style="color:var(--txt)">Vantage</b> compares prices across digital storefronts. Purchases are completed on each store's own site. Pricing data from <a href="https://www.cheapshark.com" target="_blank" rel="noopener">CheapShark</a>; Nintendo catalog data from <a href="https://rawg.io" target="_blank" rel="noopener">RAWG</a>; free game giveaways from <a href="https://www.gamerpower.com" target="_blank" rel="noopener">GamerPower</a>; PC artwork served from the Steam CDN. All trademarks belong to their owners. Vantage is an independent fan project and isn't affiliated with any storefront.</p>
+  <p><b style="color:var(--txt)">Vantage</b> compares prices across digital storefronts. Purchases are completed on each store's own site. Some store links go through CheapShark, which may earn a commission. Pricing data from <a href="https://www.cheapshark.com" target="_blank" rel="noopener">CheapShark</a>; Nintendo catalog data from <a href="https://rawg.io" target="_blank" rel="noopener">RAWG</a>; free game giveaways from <a href="https://www.gamerpower.com" target="_blank" rel="noopener">GamerPower</a>; PC artwork served from the Steam CDN. All trademarks belong to their owners. Vantage is an independent fan project and isn't affiliated with any storefront.</p>
   <p style="text-align:right">Made by CodyMKW &amp; Joseph</p>
  </div>
 </footer>
@@ -397,7 +397,12 @@ const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>n===0?'Free':'$'+n.toFixed(2);
-const redirect=id=>CS+'/redirect?dealID='+encodeURIComponent(id);
+/* CheapShark dealIDs arrive already URL-encoded (e.g. "abc%2Bdef%3D"). Encoding them again
+   breaks the redirect and lands on the CheapShark home page, so decode first, then encode once. */
+const dealParam=id=>{try{return encodeURIComponent(decodeURIComponent(id))}catch{return encodeURIComponent(id)}};
+const redirect=id=>CS+'/redirect?dealID='+dealParam(id);
+/* Steam deals link straight to the Steam page; other stores go through CheapShark's redirect. */
+const buyUrl=(dealID,storeID,app)=>String(storeID)==='1'&&app?'https://store.steampowered.com/app/'+encodeURIComponent(app):redirect(dealID);
 const ICON={
  heart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-7.500-4.600-9.500-9.400C1.200 8.300 3 5 6.300 5c2 0 3.600 1.100 4.400 2.600h.6C12.100 6.100 13.700 5 15.700 5 19 5 20.800 8.300 19.500 11.600 19.500 11.600 12 21 12 21z"/></svg>',
  cart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.400 11.500a2 2 0 002 1.500h7.800a2 2 0 002-1.500L21 8H6"/><circle cx="10" cy="21" r="1"/><circle cx="18" cy="21" r="1"/></svg>',
@@ -807,14 +812,15 @@ async function openGame(id){
       <span class="n">${esc(storeName(d.store))}${i===0?' <span class="off" style="margin-left:6px">Best price</span>':''}</span>
       ${d.savings>0?`<span class="off">-${d.savings}%</span>`:'<span></span>'}
       <span>${d.savings>0?`<s>${fmt(d.retail)}</s> `:''}<span class="pr">${fmt(d.price)}</span></span>
-      <a class="btn sm" href="${redirect(d.dealID)}" target="_blank" rel="noopener">Get ${ICON.ext}</a></div>`).join('')}</div>
+      <a class="btn sm" href="${esc(buyUrl(d.dealID,d.store,it.app))}" target="_blank" rel="noopener">Get ${ICON.ext}</a></div>`).join('')}</div>
    </div>
    <aside class="buy">
     <div class="bp">${best.savings>0?`<span class="off">-${best.savings}%</span><s>${fmt(best.retail)}</s>`:''}<b>${fmt(best.price)}</b></div>
     <div class="bs">Best price at ${storeLogo(best.store)?`<img src="${esc(storeLogo(best.store))}" alt="">`:''}<b style="color:var(--txt)">${esc(storeName(best.store))}</b></div>
-    <a class="btn primary" href="${redirect(best.dealID)}" target="_blank" rel="noopener">${best.price===0?'Claim for free':'Buy now'} ${ICON.ext}</a>
+    <a class="btn primary" href="${esc(buyUrl(best.dealID,best.store,it.app))}" target="_blank" rel="noopener">${best.price===0?'Claim for free':'Buy now'} ${ICON.ext}</a>
     <button class="btn" data-cart="${esc(id)}">${ICON.cart}Add to cart</button>
     <button class="btn ghost ${inW?'on':''}" data-wish="${esc(id)}">${ICON.heart}${inW?'In wishlist':'Add to wishlist'}</button>
+    <p class="mut small">Steam links go straight to Steam. Other stores open through CheapShark, which may earn a small commission.</p>
     ${ceTxt?`<div class="low">Lowest price ever: ${ceTxt}</div>`:''}
     <div class="links">${it.app?`<a href="https://store.steampowered.com/app/${esc(it.app)}" target="_blank" rel="noopener">Steam page</a>`:''}${gi?.metacriticLink?`<a href="https://www.metacritic.com${esc(gi.metacriticLink)}" target="_blank" rel="noopener">Metacritic</a>`:''}</div>
    </aside>
@@ -891,7 +897,7 @@ document.addEventListener('click',e=>{
  if(el=t.closest('[data-cart]')){addCart(el.dataset.cart);return}
  if(el=t.closest('[data-rm]')){delete state.cart[el.dataset.rm];store.set('cart',state.cart);updateCounts();renderCart();return}
  if(t.closest('#clearCart')){state.cart={};store.set('cart',state.cart);updateCounts();renderCart();return}
- if(t.closest('#checkout')){Object.values(state.cart).forEach(it=>window.open(redirect(it.dealID),'_blank','noopener'));return}
+ if(t.closest('#checkout')){Object.values(state.cart).forEach(it=>window.open(buyUrl(it.dealID,it.store,it.app),'_blank','noopener'));return}
  if(t.closest('[data-close]')||t===$('#modal')){closeGame();return}
  if(el=t.closest('[data-hero]')){heroIdx=+el.dataset.hero;renderHero();return}
  if(el=t.closest('[data-preset]')){applyPreset(el.dataset.preset);return}
