@@ -163,7 +163,7 @@ Each deal is normalized into `{ id, dealID, title, sale, normal, savings, mc, pc
 | `vantage:cart` | `localStorage` | Cart items |
 | `vantage:filters` | `localStorage` | Last-used Browse filters (title is never saved) |
 | `vantage:rawgKey` | `localStorage` | RAWG key pasted into the Nintendo setup card (not used if `RAWG_KEY` is set) |
-| `vantage:c:<path>` | `sessionStorage` | API response cache (5–10 min; stores 24h) |
+| `vantage:c:<url>` | `localStorage` | API response cache. Fresh for 5–10 min (stores 24h), then kept as a fallback if the network fails. Cleared automatically if storage fills up |
 
 Clear site data to reset everything. Wishlist and cart are per-browser, with no accounts or backend.
 
@@ -210,7 +210,7 @@ Everything lives in `index.html`:
 - Games sold only outside Steam get a smaller thumbnail instead of full artwork
 - Nintendo games have **no prices** in Vantage (see above), and the Nintendo section needs a RAWG key
 - Nintendo games can be wishlisted but not added to the cart, since there's no price to total
-- CheapShark rate-limits heavy use; the app retries on `429` and caches responses, but don't hammer it
+- CheapShark rate-limits bursts of requests, and its `429` response has no CORS headers, so the browser reports a rate limit as a **CORS error** (`No 'Access-Control-Allow-Origin' header`). Vantage works around this: requests to each API go out one at a time with a short gap, failures are retried with backoff (a masked `429` shows up as a thrown `fetch` error, not a status code), results are cached in `localStorage` (5–10 min fresh, 24h for the store list), and if the network still fails the last cached copy is shown instead of an error. If you ever see a wall of CORS errors in the console, it's almost always a rate limit; wait a minute and reload
 - Wishlist and cart don't sync between devices
 
 ## Credits
