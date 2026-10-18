@@ -107,7 +107,9 @@ Base URL: `https://www.cheapshark.com/api/1.0`
 | `/games?id=<gameID>` | Per-store price comparison and lowest price ever |
 | `/games?ids=<id,id,…>` | Wishlist price refresh (batched in groups of 25) |
 | `/stores` | Store names and logos (cached 24h) |
-| `/redirect?dealID=<dealID>` (site root) | Outbound "Buy" links |
+| `/redirect?dealID=<dealID>` (site root) | Outbound "Buy" links for non-Steam stores |
+
+**Buy links:** `dealID`s from the API are already URL-encoded (for example `abc%2Bdef%3D`), so Vantage decodes then re-encodes them once; encoding them twice makes `/redirect` fail and dump you on the CheapShark home page. Steam deals skip CheapShark entirely and link straight to `https://store.steampowered.com/app/<appid>`. Every other store goes through CheapShark's redirect, which is how CheapShark earns a commission from some stores (per its [About page](https://www.cheapshark.com/about)); Vantage says so in the game modal and footer.
 
 ### `/deals` parameters Browse sends
 
