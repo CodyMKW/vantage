@@ -218,6 +218,50 @@ main{padding-bottom:60px}
 .toasts{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:120;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
 .toast{background:var(--panel2);border:1px solid var(--line);padding:11px 18px;border-radius:12px;font-weight:600;box-shadow:0 12px 40px rgba(0,0,0,.5);animation:rise .25s both}
 
+/* extra sources: nintendo, free games, mobile nav */
+[hidden]{display:none!important}
+nav.mnav{display:none}
+.mnav{overflow-x:auto;padding-bottom:10px;scrollbar-width:none}
+.mnav::-webkit-scrollbar{display:none}
+.mnav a{white-space:nowrap}
+.mut{color:var(--mut)}
+.small{font-size:12.5px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.barR{display:flex;gap:10px;flex-wrap:wrap}
+.barR .sel{width:auto;min-width:180px;background-color:var(--panel)}
+.inp{height:40px;border-radius:10px;background:var(--panel);border:1px solid var(--line);padding:0 14px;outline:0;min-width:240px}
+.inp:focus{border-color:var(--acc)}
+.segs{display:flex;gap:8px;flex-wrap:wrap}
+.seg{height:36px;padding:0 14px;border-radius:10px;background:var(--panel);border:1px solid var(--line);font-weight:600;font-size:13.5px;color:var(--mut);transition:.15s}
+.seg:hover{color:var(--txt);background:var(--panel2)}
+.seg.on{background:var(--acc);border-color:transparent;color:#fff}
+.credit{margin-top:26px;color:var(--mut);font-size:13px}
+.credit a{color:var(--acc2)}
+.grid.wide{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.card.wide .art{aspect-ratio:16/10}
+.track .card.wide{flex:0 0 300px}
+.skcard.wide{flex:0 0 300px}.skcard.wide .sk{aspect-ratio:16/10}
+.badge.mcb{background:var(--good);color:#04210f}
+.badge.mcb.mid{background:var(--warn);color:#2b1d00}
+.badge.mcb.low{background:var(--bad);color:#fff}
+.typ{position:absolute;right:10px;top:10px;background:rgba(9,11,16,.75);backdrop-filter:blur(6px);border-radius:7px;padding:2px 8px;font-size:11.5px;font-weight:700}
+.meta .p .mut{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.setup{max-width:640px;margin:20px auto;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:28px}
+.setup h3{font-size:20px;margin-bottom:10px}
+.setup p,.setup li{color:var(--mut)}
+.setup p{margin-bottom:12px}
+.setup ol{margin:0 0 18px 20px;display:grid;gap:6px}
+.setup a{color:var(--acc2)}
+.setup code{background:var(--bg2);padding:1px 6px;border-radius:6px;color:var(--txt)}
+.setup .warn{color:var(--warn)}
+.keyrow{display:flex;gap:10px;margin-bottom:10px}
+.keyrow input{flex:1;min-width:0;height:46px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);padding:0 14px;outline:0}
+.keyrow input:focus{border-color:var(--acc)}
+.desc p{color:#c5cbdc;line-height:1.6;margin-bottom:10px}
+.shots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 26px}
+.shots img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;background:var(--panel)}
+.buy .small{line-height:1.4}
+
 footer{border-top:1px solid var(--line);padding:34px 0;color:var(--mut);font-size:13px}
 footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}
 footer p{max-width:700px}
@@ -227,7 +271,7 @@ footer a{color:var(--acc2)}
  .hero{grid-template-columns:1fr;height:auto}.hero-main{height:420px}.hero-side{flex-direction:row;overflow-x:auto}.hs{flex:0 0 220px}
  .browse{grid-template-columns:1fr}.filters{position:static;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
  .mbody{grid-template-columns:1fr}.buy{position:static;order:-1}
- nav{display:none}
+ nav.main{display:none}nav.mnav{display:flex}
 }
 @media(max-width:640px){
  .wrap{padding:0 16px}.hbar{gap:12px}.logo span{display:none}.search kbd{display:none}
@@ -244,9 +288,11 @@ footer a{color:var(--acc2)}
 <header>
  <div class="wrap hbar">
   <a class="logo" href="#/"><i><svg viewBox="0 0 24 24" fill="#fff"><path d="M3 5l9 15L21 5h-4l-5 9-5-9z"/></svg></i><span>Vantage</span></a>
-  <nav>
+  <nav class="main">
    <a href="#/" data-nav="home">Discover</a>
    <a href="#/browse" data-nav="browse">Browse</a>
+   <a href="#/nintendo" data-nav="nintendo">Nintendo</a>
+   <a href="#/free" data-nav="free">Free games</a>
    <a href="#/wishlist" data-nav="wishlist">Wishlist</a>
   </nav>
   <div class="search">
@@ -258,6 +304,13 @@ footer a{color:var(--acc2)}
   <a class="iconbtn" href="#/wishlist" title="Wishlist" aria-label="Wishlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-7.5-4.6-9.5-9.4C1.2 8.3 3 5 6.3 5c2 0 3.6 1.1 4.4 2.6h.6C12.1 6.100 13.700 5 15.700 5 19 5 20.800 8.300 19.500 11.600 19.500 11.600 12 21 12 21z"/></svg><span class="cnt" id="wcnt" data-n="0"></span></a>
   <button class="iconbtn" id="cartBtn" title="Cart" aria-label="Cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11.500a2 2 0 002 1.500h7.800a2 2 0 002-1.500L21 8H6"/><circle cx="10" cy="21" r="1"/><circle cx="18" cy="21" r="1"/></svg><span class="cnt" id="ccnt" data-n="0"></span></button>
  </div>
+ <nav class="mnav wrap" aria-label="Sections">
+  <a href="#/" data-nav="home">Discover</a>
+  <a href="#/browse" data-nav="browse">Browse</a>
+  <a href="#/nintendo" data-nav="nintendo">Nintendo</a>
+  <a href="#/free" data-nav="free">Free games</a>
+  <a href="#/wishlist" data-nav="wishlist">Wishlist</a>
+ </nav>
 </header>
 
 <main>
@@ -285,6 +338,31 @@ footer a{color:var(--acc2)}
   </div>
  </div>
 
+ <div class="view wrap" id="nintendo" hidden>
+  <div class="page-h"><h1>Nintendo games</h1><p>The Switch library with ratings, release dates and where to buy. Nintendo sets prices per region on the eShop, so Vantage sends you straight to the store.</p></div>
+  <div id="ninSetup" hidden></div>
+  <div id="ninMain">
+   <div class="bar">
+    <div class="segs" id="ninTabs"></div>
+    <div class="barR">
+     <select class="sel" id="ninPlat" hidden aria-label="Console"></select>
+     <input class="inp" id="ninQ" type="search" placeholder="Search Nintendo games" autocomplete="off" spellcheck="false" aria-label="Search Nintendo games">
+    </div>
+   </div>
+   <div class="grid wide" id="nGrid"></div>
+   <div class="more"><button class="btn" id="ninMore" hidden>Load more</button></div>
+   <p class="credit">Game data by <a href="https://rawg.io" target="_blank" rel="noopener">RAWG</a></p>
+  </div>
+ </div>
+
+ <div class="view wrap" id="free" hidden>
+  <div class="page-h"><h1>Free games</h1><p>Live giveaways across PC stores, consoles and mobile. Claim them before they expire.</p></div>
+  <div class="bar"><div class="segs" id="gpPlat"></div></div>
+  <div class="bar"><div class="segs" id="gpType"></div><span class="mut small" id="gpCount"></span></div>
+  <div class="grid wide" id="gpGrid"></div>
+  <p class="credit">Giveaway data by <a href="https://www.gamerpower.com" target="_blank" rel="noopener">GamerPower</a></p>
+ </div>
+
  <div class="view wrap" id="wishlist" hidden>
   <div class="page-h"><h1>Your wishlist</h1><p id="wSub">Saved in this browser. Price drops are highlighted.</p></div>
   <div class="grid" id="wGrid"></div>
@@ -293,7 +371,7 @@ footer a{color:var(--acc2)}
 
 <footer>
  <div class="wrap">
-  <p><b style="color:var(--txt)">Vantage</b> compares prices across digital storefronts. Purchases are completed on each store's own site. Pricing data from <a href="https://www.cheapshark.com" target="_blank" rel="noopener">CheapShark</a>; artwork served from the Steam CDN. All trademarks belong to their owners. Vantage is an independent fan project and isn't affiliated with any storefront.</p>
+  <p><b style="color:var(--txt)">Vantage</b> compares prices across digital storefronts. Purchases are completed on each store's own site. Pricing data from <a href="https://www.cheapshark.com" target="_blank" rel="noopener">CheapShark</a>; Nintendo catalog data from <a href="https://rawg.io" target="_blank" rel="noopener">RAWG</a>; free game giveaways from <a href="https://www.gamerpower.com" target="_blank" rel="noopener">GamerPower</a>; PC artwork served from the Steam CDN. All trademarks belong to their owners. Vantage is an independent fan project and isn't affiliated with any storefront.</p>
   <p style="text-align:right">Made by CodyMKW &amp; Joseph</p>
  </div>
 </footer>
@@ -308,6 +386,10 @@ footer a{color:var(--acc2)}
 <div class="toasts" id="toasts"></div>
 
 <script>
+/* ---- CONFIG ----
+   RAWG_KEY: free key from https://rawg.io/apidocs — powers the Nintendo section.
+   Leave empty to let each visitor paste their own key on the Nintendo page. */
+const RAWG_KEY='';
 const API='https://www.cheapshark.com/api/1.0';
 const CS='https://www.cheapshark.com';
 const STEAM='https://cdn.cloudflare.steamstatic.com/steam/apps/';
@@ -334,12 +416,12 @@ const state={items:{},stores:{},wish:store.get('wish',{}),cart:store.get('cart',
 
 /* ---------- API ---------- */
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function api(path,ttl=600){
- const key='vantage:c:'+path;
+async function get(url,ttl=600){
+ const key='vantage:c:'+url.replace(/([?&])key=[^&]*/,'$1key=_');
  try{const c=JSON.parse(sessionStorage.getItem(key)||'null');if(c&&Date.now()-c.t<ttl*1000)return c.d}catch{}
  let r;
  for(let i=0;i<3;i++){
-  r=await fetch(API+path);
+  r=await fetch(url);
   if(r.status!==429)break;
   await sleep(700*(i+1));
  }
@@ -348,6 +430,7 @@ async function api(path,ttl=600){
  try{sessionStorage.setItem(key,JSON.stringify({t:Date.now(),d}))}catch{}
  return d;
 }
+const api=(path,ttl)=>get(API+path,ttl);
 const qs=o=>'?'+new URLSearchParams(Object.fromEntries(Object.entries(o).filter(([,v])=>v!==''&&v!=null))).toString();
 const norm=d=>({id:d.gameID,dealID:d.dealID,title:d.title||d.external||'Untitled',sale:+d.salePrice,normal:+d.normalPrice,savings:Math.round(+d.savings||0),mc:+d.metacriticScore||0,pct:+d.steamRatingPercent||0,rtext:d.steamRatingText||'',rcount:+d.steamRatingCount||0,app:d.steamAppID||'',release:+d.releaseDate||0,store:d.storeID,thumb:d.thumb||''});
 function dedupe(list){const m=new Map();for(const it of list){const o=m.get(it.id);if(!o||it.sale<o.sale)m.set(it.id,it)}return[...m.values()]}
@@ -360,6 +443,7 @@ const storeLogo=id=>state.stores[id]?.logo||'';
 
 /* ---------- images ---------- */
 function urls(it,kind){
+ if(it.arts&&it.arts.length)return kind==='hero'?(it.heroArts||it.arts):it.arts;
  const a=it.app,t=it.thumb;
  if(!a)return[t].filter(Boolean);
  if(kind==='hero')return[STEAM+a+'/library_hero.jpg',STEAM+a+'/header.jpg',t].filter(Boolean);
@@ -386,15 +470,17 @@ function priceHTML(it){
  if(it.sale===0)return `<b class="free">Free</b>`+(it.normal>0?` <s>${fmt(it.normal)}</s>`:'');
  return (it.savings>0?`<s>${fmt(it.normal)}</s>`:'')+`<b>${fmt(it.sale)}</b>`;
 }
-function card(it,extra=''){
+function card(it,extra='',wide=false){
  const w=!!state.wish[it.id];
- const badge=it.sale===0?'<span class="badge free">FREE</span>':it.savings>0?`<span class="badge">-${it.savings}%</span>`:'';
- return `<article class="card" tabindex="0" role="button" data-open="${esc(it.id)}" aria-label="${esc(it.title)}">
-  <div class="art" data-t="${esc(it.title)}">${img(it,'card')}${badge}${extra}
+ const nin=it.kind==='nin';
+ const badge=nin?(it.mc?`<span class="badge mcb ${mcClass(it.mc)}" title="Metacritic">${it.mc}</span>`:''):it.sale===0?'<span class="badge free">FREE</span>':it.savings>0?`<span class="badge">-${it.savings}%</span>`:'';
+ const meta=nin?`<span class="mut">${esc(ninSub(it))}</span>`:priceHTML(it);
+ return `<article class="card ${wide?'wide':''}" tabindex="0" role="button" data-open="${esc(it.id)}" aria-label="${esc(it.title)}">
+  <div class="art" data-t="${esc(it.title)}">${img(it,wide?'wide':'card')}${badge}${extra}
    <button class="heart ${w?'on':''}" data-wish="${esc(it.id)}" aria-label="${w?'Remove from':'Add to'} wishlist" title="Wishlist">${ICON.heart}</button></div>
-  <div class="meta"><div class="t" title="${esc(it.title)}">${esc(it.title)}</div><div class="p">${priceHTML(it)}</div></div></article>`;
+  <div class="meta"><div class="t" title="${esc(it.title)}">${esc(it.title)}</div><div class="p">${meta}</div></div></article>`;
 }
-const skRow=n=>Array.from({length:n},()=>'<div class="skcard"><div class="sk"></div><i class="sk"></i></div>').join('');
+const skRow=(n,wide)=>Array.from({length:n},()=>`<div class="skcard${wide?' wide':''}"><div class="sk"></div><i class="sk"></i></div>`).join('');
 function updateCounts(){
  const w=Object.keys(state.wish).length,c=Object.keys(state.cart).length;
  $('#wcnt').textContent=w||'';$('#wcnt').dataset.n=w;
@@ -417,6 +503,60 @@ function addCart(id){
  store.set('cart',state.cart);updateCounts();renderCart();toast('Added to cart');
 }
 
+/* ---------- Extra sources: RAWG (Nintendo catalog) + GamerPower (giveaways) ---------- */
+const RAWG='https://api.rawg.io/api';
+const GP='https://gamerpower.com/api/giveaways';
+const rawgKey=()=>String(RAWG_KEY||store.get('rawgKey','')||'').trim();
+const rawg=(path,ttl=600)=>get(RAWG+path+(path.includes('?')?'&':'?')+'key='+encodeURIComponent(rawgKey()),ttl);
+const safeUrl=u=>/^https?:\/\//i.test(u||'')?u:'#';
+const gameHash=id=>String(id).startsWith('r')?'#/nin/'+String(id).slice(1):'#/game/'+id;
+const rawgImg=(u,w)=>u?u.replace(/\/media\/(?!resize\/|crop\/)/,'/media/resize/'+w+'/-/'):'';
+const ninArts=(u,w)=>u?[rawgImg(u,w),u]:[];
+const nnorm=g=>({kind:'nin',id:'r'+g.id,rid:g.id,title:g.name||'Untitled',arts:ninArts(g.background_image,640),heroArts:ninArts(g.background_image,1280),mc:+g.metacritic||0,release:g.released||'',genres:(g.genres||[]).map(x=>x.name)});
+const ninSub=it=>[it.release?it.release.slice(0,4):'TBA',(it.genres||[])[0]].filter(Boolean).join(' · ');
+const gpList=async p=>{const r=await get(GP+qs(p),300);return Array.isArray(r)?r:[]};
+function endTxt(d){const x=new Date(String(d).replace(' ','T'));return isNaN(x)?'':'Ends '+x.toLocaleDateString(undefined,{month:'short',day:'numeric'})}
+function giveCard(g){
+ const worth=g.worth&&g.worth!=='N/A'?g.worth:'';
+ const pl=(g.platforms||'').split(',').map(s=>s.trim()).filter(Boolean);
+ const plTxt=pl.slice(0,2).join(', ')+(pl.length>2?' +'+(pl.length-2):'');
+ const left=g.end_date&&g.end_date!=='N/A'?endTxt(g.end_date):'';
+ const u=[g.image,g.thumbnail].filter(Boolean);
+ const title=String(g.title||'Giveaway').replace(/\s+Giveaway$/i,'');
+ return `<a class="card wide" href="${esc(safeUrl(g.open_giveaway_url||g.gamerpower_url))}" target="_blank" rel="noopener" aria-label="${esc(title)}">
+  <div class="art" data-t="${esc(title)}">${u.length?`<img src="${esc(u[0])}" data-f="${esc(u.slice(1).join('|'))}" alt="${esc(title)}" loading="lazy" onerror="imgFail(this)">`:''}<span class="badge free">FREE</span>${g.type&&g.type!=='Game'?`<span class="typ">${esc(g.type)}</span>`:''}</div>
+  <div class="meta"><div class="t" title="${esc(title)}">${esc(title)}</div><div class="p">${worth?`<s>${esc(worth)}</s>`:''}<b class="free">Free</b><span class="mut">${esc([plTxt,left].filter(Boolean).join(' · '))}</span></div></div></a>`;
+}
+async function ninPlatforms(){
+ if(NIN.plats)return NIN.plats;
+ let list=[];
+ try{
+  const r=await rawg('/platforms/lists/parents?page_size=40',86400);
+  const parent=(r.results||[]).find(p=>/nintendo/i.test(p.name));
+  list=((parent&&parent.platforms)||[]).filter(p=>/^nintendo-switch/.test(p.slug)).map(p=>({id:p.id,name:p.name}));
+ }catch(e){if(/40[13]/.test(e.message))throw e}
+ if(!list.length)list=[{id:7,name:'Nintendo Switch'}];
+ return NIN.plats=list;
+}
+async function loadExtras(){
+ const g=$('#row-give');
+ if(g){
+  try{
+   const list=(await gpList({type:'game','sort-by':'popularity'})).slice(0,16);
+   if(list.length)$('.track',g).innerHTML=list.map(giveCard).join('');else g.remove();
+  }catch{g.remove()}
+ }
+ const n=$('#row-nin');
+ if(n){
+  try{
+   const plats=await ninPlatforms();
+   const r=await rawg('/games'+qs({platforms:plats.map(p=>p.id).join(','),ordering:'-metacritic',metacritic:'85,100',page_size:20}),3600);
+   const list=reg((r.results||[]).filter(x=>x.background_image).map(nnorm));
+   if(list.length)$('.track',n).innerHTML=list.map(it=>card(it,'',true)).join('');else n.remove();
+  }catch{n.remove()}
+ }
+}
+
 /* ---------- Home ---------- */
 const PRESETS={
  top:{sort:'Deal Rating',sale:true},
@@ -426,7 +566,7 @@ const PRESETS={
  savings:{sort:'Biggest savings',sale:true,mc:'70'}
 };
 const ROWS=[
- {key:'free',title:'Free right now',preset:'free',q:{pageSize:30,upperPrice:0,sortBy:'Metacritic',desc:1},filter:i=>i.sale===0},
+ {key:'free',title:'Free on PC stores',preset:'free',q:{pageSize:30,upperPrice:0,sortBy:'Metacritic',desc:1},filter:i=>i.sale===0},
  {key:'top',title:'Top deals',preset:'top',q:{pageSize:40,sortBy:'Deal Rating',onSale:1}},
  {key:'rated',title:'Critically acclaimed, on sale',preset:'rated',q:{pageSize:40,sortBy:'Metacritic',desc:1,onSale:1,metacritic:85,lowerPrice:1}},
  {key:'under10',title:'Great games under $10',preset:'under10',q:{pageSize:40,sortBy:'Metacritic',desc:1,upperPrice:10,lowerPrice:1,metacritic:75,onSale:1}},
@@ -436,7 +576,10 @@ let heroTimer=null,heroList=[],heroIdx=0;
 
 async function loadHome(){
  if(state.homeLoaded)return;state.homeLoaded=true;
- $('#rows').innerHTML=ROWS.map(r=>`<section class="row" id="row-${r.key}"><div class="rh"><h2>${r.title}</h2><a data-preset="${r.preset}">See all</a><div class="arr"><button data-scroll="-1" aria-label="Scroll left">${ICON.l}</button><button data-scroll="1" aria-label="Scroll right">${ICON.r}</button></div></div><div class="track">${skRow(8)}</div></section>`).join('');
+ const sh=(id,title,link,wide)=>`<section class="row" id="${id}"><div class="rh"><h2>${title}</h2>${link}<div class="arr"><button data-scroll="-1" aria-label="Scroll left">${ICON.l}</button><button data-scroll="1" aria-label="Scroll right">${ICON.r}</button></div></div><div class="track">${skRow(8,wide)}</div></section>`;
+ const rowSh=r=>sh('row-'+r.key,r.title,`<a data-preset="${r.preset}">See all</a>`);
+ $('#rows').innerHTML=sh('row-give','Free to claim right now','<a href="#/free">See all</a>',true)+rowSh(ROWS[0])+rowSh(ROWS[1])+(rawgKey()?sh('row-nin','Top rated on Nintendo Switch','<a href="#/nintendo">See all</a>',true):'')+ROWS.slice(2).map(rowSh).join('');
+ loadExtras();
  await loadStores();
  const results={};
  const jobs=ROWS.map(async(r,i)=>{
@@ -556,8 +699,9 @@ async function renderWishlist(refresh=true){
  if(!refresh)return;
  try{
   let changed=false;
-  for(let i=0;i<ids.length;i+=25){
-   const chunk=ids.slice(i,i+25);
+  const pids=ids.filter(id=>!String(id).startsWith('r'));
+  for(let i=0;i<pids.length;i+=25){
+   const chunk=pids.slice(i,i+25);
    const data=await api('/games?ids='+chunk.join(','),300);
    for(const id of chunk){
     const g=data[id];if(!g||!g.deals||!g.deals.length||!state.wish[id])continue;
@@ -700,19 +844,158 @@ document.addEventListener('click',e=>{
  if(el=t.closest('[data-scroll]')){const tr=el.closest('.row').querySelector('.track');tr.scrollBy({left:el.dataset.scroll*tr.clientWidth*.85,behavior:'smooth'});return}
  if(t.closest('[data-retry]')){state.homeLoaded=false;loadHome();return}
  if(t.closest('[data-retry-browse]')){loadBrowse(true);return}
- if(el=t.closest('[data-open]')){location.hash='#/game/'+el.dataset.open;return}
+ if(el=t.closest('[data-nin-tab]')){NIN.tab=el.dataset.ninTab;NIN.q='';$('#ninQ').value='';$$('[data-nin-tab]').forEach(b=>b.classList.toggle('on',b===el));loadNin(true);return}
+ if(el=t.closest('[data-gp-plat]')){GPS.plat=el.dataset.gpPlat;$$('[data-gp-plat]').forEach(b=>b.classList.toggle('on',b===el));loadFree();return}
+ if(el=t.closest('[data-gp-type]')){GPS.type=el.dataset.gpType;$$('[data-gp-type]').forEach(b=>b.classList.toggle('on',b===el));loadFree();return}
+ if(t.closest('[data-retry-nin]')){loadNin(true);return}
+ if(t.closest('[data-retry-gp]')){loadFree();return}
+ if(t.closest('#rawgSave')){const v=$('#rawgKeyIn').value.trim();if(!v){toast('Paste a key first');return}store.set('rawgKey',v);location.reload();return}
+ if(el=t.closest('[data-open]')){location.hash=gameHash(el.dataset.open);return}
 });
 document.addEventListener('keydown',e=>{
- if(e.key==='Enter'&&e.target.matches?.('.card[data-open]'))location.hash='#/game/'+e.target.dataset.open;
+ if(e.key==='Enter'&&e.target.matches?.('.card[data-open]'))location.hash=gameHash(e.target.dataset.open);
  if(e.key==='/'&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();qEl.focus()}
  if(e.key==='Escape'){if($('#drawer').classList.contains('open'))closeDrawer();else if($('#modal').classList.contains('open'))closeGame()}
 });
 $('#cartBtn').onclick=openDrawer;$('#dClose').onclick=closeDrawer;$('#scrim').onclick=closeDrawer;
 
+/* ---------- Nintendo catalog (RAWG) ---------- */
+const NIN={tab:'pop',q:'',plat:'all',page:1,tok:0,loading:false,init:false,plats:null,seen:new Set()};
+const dayOff=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const NIN_TABS={
+ pop:{l:'Popular',p:()=>({ordering:'-added'})},
+ top:{l:'Top rated',p:()=>({ordering:'-metacritic',metacritic:'80,100'})},
+ new:{l:'New releases',p:()=>({ordering:'-released',dates:dayOff(-90)+','+dayOff(0)})},
+ soon:{l:'Coming soon',p:()=>({ordering:'released',dates:dayOff(1)+','+dayOff(400)})}
+};
+function ninSetup(msg=''){
+ $('#ninMain').hidden=true;
+ const s=$('#ninSetup');s.hidden=false;
+ s.innerHTML=`<div class="setup"><h3>Connect the Nintendo catalog</h3>
+  <p>This section is powered by <a href="https://rawg.io/apidocs" target="_blank" rel="noopener">RAWG</a>, a free game database. It needs a free API key (20,000 requests a month, non-commercial projects, with a RAWG credit link, which Vantage includes).</p>
+  ${msg?`<p class="warn">${esc(msg)}</p>`:''}
+  <ol><li>Create a free account and copy your key from <a href="https://rawg.io/apidocs" target="_blank" rel="noopener">rawg.io/apidocs</a>.</li><li>Paste it below, or set <code>RAWG_KEY</code> at the top of the script so it works for every visitor.</li></ol>
+  <div class="keyrow"><input id="rawgKeyIn" type="text" placeholder="Paste your RAWG API key" autocomplete="off" spellcheck="false"><button class="btn primary" id="rawgSave">Save key</button></div>
+  <small class="mut">A pasted key is saved only in this browser.</small></div>`;
+}
+function initNin(){
+ if(NIN.init)return;NIN.init=true;
+ $('#ninTabs').innerHTML=Object.entries(NIN_TABS).map(([k,t])=>`<button class="seg ${k===NIN.tab?'on':''}" data-nin-tab="${k}">${t.l}</button>`).join('');
+ let t;
+ $('#ninQ').addEventListener('input',e=>{clearTimeout(t);t=setTimeout(()=>{NIN.q=e.target.value.trim();loadNin(true)},350)});
+ $('#ninPlat').addEventListener('change',e=>{NIN.plat=e.target.value;loadNin(true)});
+ $('#ninMore').onclick=()=>loadNin(false);
+}
+async function loadNin(reset){
+ if(!rawgKey()){ninSetup();return}
+ $('#ninSetup').hidden=true;$('#ninMain').hidden=false;
+ const grid=$('#nGrid');
+ if(reset){NIN.page=1;NIN.seen=new Set();grid.innerHTML=skRow(9,true).replace(/class="skcard wide"/g,'class="skcard wide" style="flex:initial"');$('#ninMore').hidden=true}
+ else if(NIN.loading)return;
+ const tok=++NIN.tok;NIN.loading=true;$('#ninMore').disabled=true;
+ try{
+  const plats=await ninPlatforms();
+  const sel=$('#ninPlat');
+  if(plats.length>1&&!sel.options.length){sel.innerHTML='<option value="all">All Switch consoles</option>'+plats.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');sel.hidden=false}
+  const ids=NIN.plat==='all'?plats.map(p=>p.id).join(','):NIN.plat;
+  const q=NIN.q?{platforms:ids,search:NIN.q,page_size:24,page:NIN.page}:{platforms:ids,page_size:24,page:NIN.page,...NIN_TABS[NIN.tab].p()};
+  const r=await rawg('/games'+qs(q),600);
+  if(tok!==NIN.tok)return;
+  const list=reg((r.results||[]).map(nnorm)).filter(it=>{if(NIN.seen.has(it.id))return false;NIN.seen.add(it.id);return true});
+  if(reset)grid.innerHTML='';
+  grid.insertAdjacentHTML('beforeend',list.map(it=>card(it,'',true)).join(''));
+  if(reset&&!list.length)grid.innerHTML='<div class="empty" style="grid-column:1/-1"><h3>No games found</h3>Try a different search or tab.</div>';
+  $('#ninMore').hidden=!r.next;NIN.page++;
+ }catch(e){
+  if(tok!==NIN.tok)return;
+  if(/40[13]/.test(e.message)){ninSetup('RAWG rejected that key. Double-check it and save again.');return}
+  if(reset)grid.innerHTML='<div class="err" style="grid-column:1/-1">Couldn\'t load Nintendo games. <button class="btn sm" data-retry-nin>Retry</button></div>';
+  else toast('Couldn\'t load more. Try again.');
+ }finally{if(tok===NIN.tok){NIN.loading=false;$('#ninMore').disabled=false}}
+}
+async function openNin(rid){
+ const id='r'+rid;state.openId=id;
+ const m=$('#modal');m.classList.add('open');document.body.classList.add('lock');m.scrollTop=0;
+ const hint=state.items[id];
+ $('#mbox').innerHTML=`<div class="mhero">${hint?img(hint,'hero'):''}<button class="x" data-close aria-label="Close">${ICON.x}</button><div class="in"><h2>${esc(hint?.title||'Loading…')}</h2></div></div><div class="mbody"><div><div class="sk" style="height:90px;margin-bottom:20px"></div><div class="sk" style="height:200px"></div></div><div class="sk" style="height:260px"></div></div>`;
+ try{
+  if(!rawgKey())throw new Error('nokey');
+  const [g,st,ss]=await Promise.all([
+   rawg('/games/'+rid,3600),
+   rawg('/games/'+rid+'/stores',3600).catch(()=>({})),
+   rawg('/games/'+rid+'/screenshots',3600).catch(()=>({}))
+  ]);
+  if(state.openId!==id)return;
+  const it=nnorm(g);state.items[id]={...state.items[id],...it};
+  const names={};(g.stores||[]).forEach(s=>{if(s.store)names[s.store.id]=s.store.name});
+  const links=(st.results||[]).map(x=>({name:names[x.store_id]||'Store',url:safeUrl(x.url)})).filter(x=>x.url!=='#').sort((a,b)=>/nintendo/i.test(b.name)-/nintendo/i.test(a.name));
+  const rel=g.released?new Date(g.released+'T00:00:00').toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'}):(g.tba?'To be announced':'—');
+  const list=a=>(a||[]).map(x=>x.name).join(', ')||'—';
+  const plats=(g.platforms||[]).map(p=>p.platform&&p.platform.name).filter(Boolean);
+  const desc=(g.description_raw||'').trim();
+  const descHTML=desc?desc.slice(0,1800).split(/\n+/).filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('')+(desc.length>1800?'<p>…</p>':''):'<p class="mut">No description available.</p>';
+  const shots=(ss.results||[]).slice(0,6).map(s=>`<a href="${esc(safeUrl(s.image))}" target="_blank" rel="noopener"><img src="${esc(rawgImg(s.image,640))}" data-f="${esc(s.image)}" alt="" loading="lazy" onerror="imgFail(this)"></a>`).join('');
+  const inW=!!state.wish[id];
+  $('#mbox').innerHTML=`
+  <div class="mhero">${img(it,'hero')}<button class="x" data-close aria-label="Close">${ICON.x}</button>
+   <div class="in"><h2>${esc(it.title)}</h2><div class="chips">${it.mc?`<span class="chip mc ${mcClass(it.mc)}">Metacritic ${it.mc}</span>`:''}${g.esrb_rating?`<span class="chip">${esc(g.esrb_rating.name)}</span>`:''}${g.rating?`<span class="chip">${esc(g.rating)}/5 · ${(+g.ratings_count||0).toLocaleString()} ratings</span>`:''}</div></div></div>
+  <div class="mbody">
+   <div>
+    <div class="facts">
+     <div class="fact"><small>Release date</small><b>${esc(rel)}</b></div>
+     <div class="fact"><small>Developer</small><b>${esc(list(g.developers))}</b></div>
+     <div class="fact"><small>Publisher</small><b>${esc(list(g.publishers))}</b></div>
+     <div class="fact"><small>Genres</small><b>${esc(list(g.genres))}</b></div>
+     <div class="fact"><small>Platforms</small><b>${esc(plats.slice(0,4).join(', ')||'—')}${plats.length>4?' +'+(plats.length-4):''}</b></div>
+    </div>
+    ${shots?`<div class="shots">${shots}</div>`:''}
+    <h3>About</h3>
+    <div class="desc">${descHTML}</div>
+   </div>
+   <aside class="buy">
+    <div class="bs"><b style="color:var(--txt)">Where to buy</b></div>
+    ${links.length?links.map((l,i)=>`<a class="btn ${i===0?'primary':''}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.name)} ${ICON.ext}</a>`).join(''):'<p class="mut small">No store links are listed for this game yet.</p>'}
+    <p class="mut small">Nintendo sets prices per region on the eShop, so check the store page for today's price.</p>
+    <button class="btn ghost ${inW?'on':''}" data-wish="${esc(id)}">${ICON.heart}${inW?'In wishlist':'Add to wishlist'}</button>
+    <div class="links">${g.metacritic_url?`<a href="${esc(safeUrl(g.metacritic_url))}" target="_blank" rel="noopener">Metacritic</a>`:''}${g.website?`<a href="${esc(safeUrl(g.website))}" target="_blank" rel="noopener">Official site</a>`:''}</div>
+    <div class="low">Game data by <a href="https://rawg.io" target="_blank" rel="noopener" style="color:var(--acc2)">RAWG</a></div>
+   </aside>
+  </div>`;
+ }catch(e){
+  if(state.openId!==id)return;
+  const msg=e.message==='nokey'||/40[13]/.test(e.message)?'Add a valid RAWG key on the Nintendo page to see game details.':'The game service didn\'t respond. Try again in a moment.';
+  $('#mbox').innerHTML=`<div style="padding:60px 30px;text-align:center"><h2 style="margin-bottom:8px">Couldn't load this game</h2><p style="color:var(--mut);margin-bottom:20px">${esc(msg)}</p><button class="btn primary" data-close>Close</button></div>`;
+ }
+}
+
+/* ---------- Free games (GamerPower) ---------- */
+const GPS={plat:'all',type:'game',tok:0,init:false};
+const GP_PLATS=[['all','All platforms'],['pc','PC'],['steam','Steam'],['epic-games-store','Epic'],['gog','GOG'],['ubisoft','Ubisoft'],['itchio','itch.io'],['switch','Switch'],['ps4.ps5','PlayStation'],['xbox-one.xbox-series-xs','Xbox'],['android','Android'],['ios','iOS']];
+const GP_TYPES=[['game','Full games'],['loot','DLC & loot'],['beta','Early access']];
+function initFree(){
+ if(GPS.init)return;GPS.init=true;
+ $('#gpPlat').innerHTML=GP_PLATS.map(([k,l])=>`<button class="seg ${k===GPS.plat?'on':''}" data-gp-plat="${k}">${l}</button>`).join('');
+ $('#gpType').innerHTML=GP_TYPES.map(([k,l])=>`<button class="seg ${k===GPS.type?'on':''}" data-gp-type="${k}">${l}</button>`).join('');
+}
+async function loadFree(){
+ const grid=$('#gpGrid');const tok=++GPS.tok;
+ grid.innerHTML=skRow(9,true).replace(/class="skcard wide"/g,'class="skcard wide" style="flex:initial"');$('#gpCount').textContent='';
+ try{
+  const list=await gpList({platform:GPS.plat==='all'?'':GPS.plat,type:GPS.type,'sort-by':'popularity'});
+  if(tok!==GPS.tok)return;
+  grid.innerHTML=list.length?list.map(giveCard).join(''):'<div class="empty" style="grid-column:1/-1"><h3>No active giveaways here right now</h3>Try another platform or type.</div>';
+  $('#gpCount').textContent=list.length?list.length+' active giveaway'+(list.length>1?'s':''):'';
+ }catch(e){
+  if(tok!==GPS.tok)return;
+  grid.innerHTML='<div class="err" style="grid-column:1/-1">Couldn\'t load giveaways. <button class="btn sm" data-retry-gp>Retry</button></div>';
+ }
+}
+
 /* ---------- Router ---------- */
+const VIEWS=['home','browse','nintendo','free','wishlist'];
 function showView(name){
  if(state.view!==name){
-  ['home','browse','wishlist'].forEach(v=>$('#'+v).hidden=v!==name);
+  VIEWS.forEach(v=>$('#'+v).hidden=v!==name);
   state.view=name;window.scrollTo(0,0);
  }
  $$('nav a').forEach(a=>a.classList.toggle('on',a.dataset.nav===name));
@@ -721,19 +1004,24 @@ function showView(name){
   initBrowse();syncFilters();
   if(state.pendingBrowse||!$('#bGrid').children.length){state.pendingBrowse=false;loadBrowse(true)}
  }
+ if(name==='nintendo'){initNin();if(!$('#nGrid').children.length||!rawgKey())loadNin(true)}
+ if(name==='free'){initFree();if(!$('#gpGrid').children.length)loadFree()}
  if(name==='wishlist')renderWishlist();
 }
 async function route(){
  const h=location.hash||'#/';
- const gm=h.match(/^#\/game\/(\d+)/);
- if(gm){
+ const gm=h.match(/^#\/game\/(\d+)/),nm=h.match(/^#\/nin\/(\d+)/);
+ if(gm||nm){
   if(!state.view)showView('home');
-  openGame(gm[1]);return;
+  if(gm)openGame(gm[1]);else openNin(nm[1]);
+  return;
  }
  closeModalUI();
  state.last=h;
  await (state.view?0:loadStores());
  if(h.startsWith('#/browse'))showView('browse');
+ else if(h.startsWith('#/nintendo'))showView('nintendo');
+ else if(h.startsWith('#/free'))showView('free');
  else if(h.startsWith('#/wishlist'))showView('wishlist');
  else showView('home');
 }
