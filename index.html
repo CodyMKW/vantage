@@ -435,7 +435,7 @@ async function get(url,ttl=600){
  return d;
 }
 const api=(path,ttl)=>get(API+path,ttl);
-const qs=o=>'+new URLSearchParams(Object.fromEntries(Object.entries(o).filter(([,v])=>v!==''&&v!=null))).toString()'?'+'+new URLSearchParams(Object.fromEntries(Object.entries(o).filter(([,v])=>v!==''&&v!=null))).toString():'';
+const qs=o=>{const p=new URLSearchParams(Object.fromEntries(Object.entries(o).filter(([,v])=>v!==''&&v!=null))).toString();return p?'?'+p:'';};
 const norm=d=>({id:d.gameID,dealID:d.dealID,title:d.title||d.external||'Untitled',sale:+d.salePrice,normal:+d.normalPrice,savings:Math.round(+d.savings||0),mc:+d.metacriticScore||0,pct:+d.steamRatingPercent||0,rtext:d.steamRatingText||'',rcount:+d.steamRatingCount||0,app:d.steamAppID||'',release:+d.releaseDate||0,store:d.storeID,thumb:d.thumb||''});
 function dedupe(list){const m=new Map();for(const it of list){const o=m.get(it.id);if(!o||it.sale<o.sale)m.set(it.id,it)}return[...m.values()]}
 function reg(list){list.forEach(it=>{state.items[it.id]={...(state.items[it.id]||{}),...it}});return list}
