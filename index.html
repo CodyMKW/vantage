@@ -262,6 +262,42 @@ nav.mnav{display:none}
 .shots img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;background:var(--panel)}
 .buy .small{line-height:1.4}
 
+/* nintendo prices, list view, eshop box */
+.badge.mcb{left:auto;right:10px;top:auto;bottom:10px}
+.meta .sub{margin-top:2px;font-size:12.5px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pslot{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.pslot s{color:var(--mut);font-size:13px}
+.pl{display:inline-block;width:64px;height:14px;border-radius:6px}
+.list{display:flex;flex-direction:column;gap:8px}
+.lsk{height:64px;border-radius:12px}
+.lrow{display:grid;grid-template-columns:104px minmax(0,1fr) 52px 210px 40px;gap:16px;align-items:center;padding:8px 12px 8px 8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;cursor:pointer;outline:0;transition:background .15s,border-color .15s}
+.lrow:hover,.lrow:focus-visible{background:var(--panel2);border-color:rgba(124,92,255,.5)}
+.lart{position:relative;width:104px;height:50px;border-radius:8px;overflow:hidden;background:var(--bg2)}
+.lart img{width:100%;height:100%;object-fit:cover}
+.lart.noimg::before{content:attr(data-t);position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:4px;font-size:10px;font-weight:700;color:var(--mut);overflow:hidden}
+.linfo .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.linfo .sub{font-size:12.5px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lprice{display:flex;align-items:center;justify-content:flex-end;gap:10px;font-size:14px}
+.lprice .badge{position:static;display:inline-block}
+.lprice b{font-weight:700}
+.lheart{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--mut)}
+.lheart:hover{background:var(--bg2);color:var(--txt)}
+.lheart svg{width:18px;height:18px}
+.lheart.on{color:var(--bad)}.lheart.on svg{fill:currentColor}
+.eshop{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.eshop .bp{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.eshop .bp b{font-size:28px;font-weight:800;letter-spacing:-.02em}
+.eshop .bp s{color:var(--mut)}
+.eshop .btn{width:100%}
+.rrow{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;padding:7px 0;border-top:1px solid var(--line)}
+.rrow s{color:var(--mut);font-size:12.5px}
+.rtitle{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+@media(max-width:760px){
+ .lrow{grid-template-columns:84px minmax(0,1fr) auto 34px;gap:10px}
+ .lart{width:84px;height:44px}.lmc{display:none}
+ .lprice{flex-direction:column;align-items:flex-end;gap:2px}
+}
+
 footer{border-top:1px solid var(--line);padding:34px 0;color:var(--mut);font-size:13px}
 footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}
 footer p{max-width:700px}
@@ -339,19 +375,20 @@ footer a{color:var(--acc2)}
  </div>
 
  <div class="view wrap" id="nintendo" hidden>
-  <div class="page-h"><h1>Nintendo games</h1><p>The Switch library with ratings, release dates and where to buy. Nintendo sets prices per region on the eShop, so Vantage sends you straight to the store.</p></div>
+  <div class="page-h"><h1>Nintendo games</h1><p id="ninSub">The Switch library with ratings, release dates and where to buy. Nintendo sets prices per region on the eShop, so Vantage sends you straight to the store.</p></div>
   <div id="ninSetup" hidden></div>
   <div id="ninMain">
    <div class="bar">
     <div class="segs" id="ninTabs"></div>
     <div class="barR">
+     <div class="segs" id="ninView" aria-label="Layout"></div>
      <select class="sel" id="ninPlat" hidden aria-label="Console"></select>
      <input class="inp" id="ninQ" type="search" placeholder="Search Nintendo games" autocomplete="off" spellcheck="false" aria-label="Search Nintendo games">
     </div>
    </div>
    <div class="grid wide" id="nGrid"></div>
    <div class="more"><button class="btn" id="ninMore" hidden>Load more</button></div>
-   <p class="credit">Game data by <a href="https://rawg.io" target="_blank" rel="noopener">RAWG</a></p>
+   <p class="credit" id="ninCredit">Game data by <a href="https://rawg.io" target="_blank" rel="noopener">RAWG</a></p>
   </div>
  </div>
 
@@ -390,6 +427,10 @@ footer a{color:var(--acc2)}
    RAWG_KEY: free key from https://rawg.io/apidocs — powers the Nintendo section.
    Leave empty to let each visitor paste their own key on the Nintendo page. */
 const RAWG_KEY='';
+/* PRICE_API: URL of your deployed price Worker (see /worker and the README), e.g.
+   'https://vantage-prices.YOURNAME.workers.dev' with no trailing slash. It adds live Nintendo
+   eShop prices. Leave empty to keep the Nintendo section price-free; everything else still works. */
+const PRICE_API='https://vantage-prices.codymkw.workers.dev';
 const API='https://www.cheapshark.com/api/1.0';
 const CS='https://www.cheapshark.com';
 const STEAM='https://cdn.cloudflare.steamstatic.com/steam/apps/';
@@ -518,14 +559,17 @@ function priceHTML(it){
  return (it.savings>0?`<s>${fmt(it.normal)}</s>`:'')+`<b>${fmt(it.sale)}</b>`;
 }
 function card(it,extra='',wide=false){
- const w=!!state.wish[it.id];
  const nin=it.kind==='nin';
- const badge=nin?(it.mc?`<span class="badge mcb ${mcClass(it.mc)}" title="Metacritic">${it.mc}</span>`:''):it.sale===0?'<span class="badge free">FREE</span>':it.savings>0?`<span class="badge">-${it.savings}%</span>`:'';
- const meta=nin?`<span class="mut">${esc(ninSub(it))}</span>`:priceHTML(it);
+ if(nin)it=Object.assign({},it,state.items[it.id]||{});
+ const w=!!state.wish[it.id];
+ const pr=nin&&PRICE_API;
+ const mcb=it.mc?`<span class="badge mcb ${mcClass(it.mc)}" title="Metacritic">${it.mc}</span>`:'';
+ const badge=nin?mcb+(pr?`<span data-sb="${esc(it.id)}">${ninSaleBadge(it)}</span>`:''):it.sale===0?'<span class="badge free">FREE</span>':it.savings>0?`<span class="badge">-${it.savings}%</span>`:'';
+ const meta=nin?(pr?`<span class="pslot" data-ps="${esc(it.id)}">${ninPriceHTML(it)}</span>`:`<span class="mut">${esc(ninSub(it))}</span>`):priceHTML(it);
  return `<article class="card ${wide?'wide':''}" tabindex="0" role="button" data-open="${esc(it.id)}" aria-label="${esc(it.title)}">
   <div class="art" data-t="${esc(it.title)}">${img(it,wide?'wide':'card')}${badge}${extra}
    <button class="heart ${w?'on':''}" data-wish="${esc(it.id)}" aria-label="${w?'Remove from':'Add to'} wishlist" title="Wishlist">${ICON.heart}</button></div>
-  <div class="meta"><div class="t" title="${esc(it.title)}">${esc(it.title)}</div><div class="p">${meta}</div></div></article>`;
+  <div class="meta"><div class="t" title="${esc(it.title)}">${esc(it.title)}</div><div class="p">${meta}</div>${pr?`<div class="sub">${esc(ninSub(it))}</div>`:''}</div></article>`;
 }
 const skRow=(n,wide)=>Array.from({length:n},()=>`<div class="skcard${wide?' wide':''}"><div class="sk"></div><i class="sk"></i></div>`).join('');
 function updateCounts(){
@@ -539,7 +583,7 @@ function syncHearts(){
 function toggleWish(id){
  const it=state.items[id];if(!it)return;
  if(state.wish[id]){delete state.wish[id];toast('Removed from wishlist')}
- else{state.wish[id]={...it,added:it.sale};toast('Added to wishlist')}
+ else{const {pricing,...snap}=it;state.wish[id]={...snap,added:it.kind==='nin'?curPrice(it.eshop):it.sale};toast('Added to wishlist')}
  store.set('wish',state.wish);updateCounts();syncHearts();
  if(state.view==='wishlist')renderWishlist(false);
 }
@@ -561,6 +605,65 @@ const rawgImg=(u,w)=>u?u.replace(/\/media\/(?!resize\/|crop\/)/,'/media/resize/'
 const ninArts=(u,w)=>u?[rawgImg(u,w),u]:[];
 const nnorm=g=>({kind:'nin',id:'r'+g.id,rid:g.id,title:g.name||'Untitled',arts:ninArts(g.background_image,640),heroArts:ninArts(g.background_image,1280),mc:+g.metacritic||0,release:g.released||'',genres:(g.genres||[]).map(x=>x.name)});
 const ninSub=it=>[it.release?it.release.slice(0,4):'TBA',(it.genres||[])[0]].filter(Boolean).join(' · ');
+
+/* ---------- Nintendo eShop prices (optional; needs the Worker in /worker) ----------
+   it.eshop: undefined = lookup pending, null = lookup failed, false = no confident match,
+   object = {nsuid,matched,exact,url,status,regular,sale,currency,saleEnds}. */
+const money=(v,c)=>{if(v===0)return'Free';try{return new Intl.NumberFormat('en-US',{style:'currency',currency:c||'USD'}).format(v)}catch{return'$'+(+v).toFixed(2)}};
+const curPrice=e=>e&&typeof e==='object'?(e.sale!=null?e.sale:e.regular):null;
+const salePct=e=>e&&e.sale!=null&&e.regular>0?Math.round((1-e.sale/e.regular)*100):0;
+function eshopOf(res,country){
+ if(!res||!res.match)return false;
+ const p=res.prices&&res.prices[country||'US'];
+ return {nsuid:res.match.nsuid,matched:res.match.title,exact:!!res.match.exact,url:res.match.url||'',status:p?p.status:'not_found',regular:p?p.regular:null,sale:p?p.sale:null,currency:p?p.currency:null,saleEnds:p?p.saleEnds:null};
+}
+function ninPriceHTML(it){
+ const e=it.eshop;
+ if(e===undefined)return'<i class="sk pl"></i>';
+ if(e===null)return'<span class="mut small">Price lookup failed</span>';
+ if(e===false)return'<span class="mut small">No eShop price found</span>';
+ if(e.regular==null&&e.sale==null)return'<span class="mut small">'+(e.status==='unreleased'?'Not yet available':'No price listed')+'</span>';
+ if(e.sale!=null)return`<s>${money(e.regular,e.currency)}</s><b>${money(e.sale,e.currency)}</b>`;
+ return`<b>${money(e.regular,e.currency)}</b>`;
+}
+function ninSaleBadge(it){
+ const e=it.eshop;
+ if(!e||e.sale==null||!(e.regular>0))return'';
+ return e.sale===0?'<span class="badge free">FREE</span>':`<span class="badge">-${salePct(e)}%</span>`;
+}
+function applyPrice(id){
+ const it=state.items[id];if(!it)return;
+ $$(`[data-ps="${id}"]`).forEach(el=>{el.innerHTML=ninPriceHTML(it)});
+ $$(`[data-sb="${id}"]`).forEach(el=>{el.innerHTML=ninSaleBadge(it)});
+}
+async function lookupTitles(titles,countries){
+ const r=await get(PRICE_API+'/lookup'+qs({titles:titles.map(t=>String(t).replace(/\|/g,' ')).join('|'),countries:countries||'US'}),1800);
+ return r.results||[];
+}
+async function decorateNin(list){
+ if(!PRICE_API)return;
+ const ids=list.filter(it=>it.kind==='nin').map(it=>it.id).filter(id=>{const s=state.items[id];return s&&(s.eshop===undefined||s.eshop===null)&&!s.pricing});
+ ids.forEach(id=>{state.items[id].pricing=true});
+ for(let i=0;i<ids.length;i+=12){
+  const chunk=ids.slice(i,i+12);
+  try{
+   const res=await lookupTitles(chunk.map(id=>state.items[id].title));
+   chunk.forEach((id,k)=>{const s=state.items[id];s.eshop=eshopOf(res[k],'US');s.pricing=false;applyPrice(id)});
+  }catch{
+   chunk.forEach(id=>{const s=state.items[id];s.eshop=null;s.pricing=false;applyPrice(id)});
+  }
+ }
+}
+function ninRow(it){
+ it=Object.assign({},it,state.items[it.id]||{});
+ const id=esc(it.id),w=!!state.wish[it.id];
+ return `<article class="lrow" tabindex="0" role="button" data-open="${id}" aria-label="${esc(it.title)}">
+  <div class="lart" data-t="${esc(it.title)}">${img(it,'wide')}</div>
+  <div class="linfo"><div class="t" title="${esc(it.title)}">${esc(it.title)}</div><div class="sub">${esc(ninSub(it))}</div></div>
+  <div class="lmc">${it.mc?`<span class="chip mc ${mcClass(it.mc)}" title="Metacritic">${it.mc}</span>`:''}</div>
+  <div class="lprice">${PRICE_API?`<span data-sb="${id}">${ninSaleBadge(it)}</span><span class="pslot" data-ps="${id}">${ninPriceHTML(it)}</span>`:''}</div>
+  <button class="lheart ${w?'on':''}" data-wish="${id}" aria-label="${w?'Remove from':'Add to'} wishlist" title="Wishlist">${ICON.heart}</button></article>`;
+}
 const GP_ALT='https://www.gamerpower.com/api/giveaways';
 const gpList=async p=>{
  let r;
@@ -604,7 +707,7 @@ async function loadExtras(){
    const plats=await ninPlatforms();
    const r=await rawg('/games'+qs({platforms:plats.map(p=>p.id).join(','),ordering:'-metacritic',metacritic:'85,100',page_size:20}),3600);
    const list=reg((r.results||[]).filter(x=>x.background_image).map(nnorm));
-   if(list.length)$('.track',n).innerHTML=list.map(it=>card(it,'',true)).join('');else n.remove();
+   if(list.length){$('.track',n).innerHTML=list.map(it=>card(it,'',true)).join('');decorateNin(list)}else n.remove();
   }catch{n.remove()}
  }
 }
@@ -752,8 +855,10 @@ async function renderWishlist(refresh=true){
  const grid=$('#wGrid');
  if(!ids.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1"><h3>Your wishlist is empty</h3>Tap the heart on any game to save it here.<br><br><a class="btn primary" href="#/browse">Browse games</a></div>';return}
  const draw=()=>{grid.innerHTML=Object.values(state.wish).map(it=>{
-  const drop=it.added!=null&&it.sale<it.added-0.005?`<span class="drop">PRICE DROP</span>`:'';
-  return card(it,drop)}).join('')};
+  let down=false;
+  if(it.kind==='nin'){const c=curPrice(it.eshop);down=it.added!=null&&c!=null&&c<it.added-0.005}
+  else down=it.added!=null&&it.sale<it.added-0.005;
+  return card(it,down?`<span class="drop">PRICE DROP</span>`:'')}).join('')};
  draw();
  if(!refresh)return;
  try{
@@ -771,6 +876,24 @@ async function renderWishlist(refresh=true){
   }
   if(changed){store.set('wish',state.wish);if(state.view==='wishlist')draw()}
  }catch{}
+ if(PRICE_API){
+  try{
+   const nids=ids.filter(id=>String(id).startsWith('r')&&state.wish[id]&&state.wish[id].title);
+   let ch=false;
+   for(let i=0;i<nids.length;i+=12){
+    const chunk=nids.slice(i,i+12);
+    const res=await lookupTitles(chunk.map(id=>state.wish[id].title));
+    chunk.forEach((id,k)=>{
+     const w=state.wish[id];if(!w)return;
+     const e=eshopOf(res[k],'US');
+     w.eshop=e;if(state.items[id])state.items[id].eshop=e;
+     if(w.added==null&&curPrice(e)!=null)w.added=curPrice(e); // first lookup becomes the baseline for drop alerts
+     ch=true;
+    });
+   }
+   if(ch){store.set('wish',state.wish);if(state.view==='wishlist')draw()}
+  }catch{}
+ }
 }
 
 /* ---------- Game detail ---------- */
@@ -905,6 +1028,7 @@ document.addEventListener('click',e=>{
  if(t.closest('[data-retry]')){state.homeLoaded=false;loadHome();return}
  if(t.closest('[data-retry-browse]')){loadBrowse(true);return}
  if(el=t.closest('[data-nin-tab]')){NIN.tab=el.dataset.ninTab;NIN.q='';$('#ninQ').value='';$$('[data-nin-tab]').forEach(b=>b.classList.toggle('on',b===el));loadNin(true);return}
+ if(el=t.closest('[data-nin-view]')){NIN.view=el.dataset.ninView;store.set('ninView',NIN.view);$$('[data-nin-view]').forEach(b=>b.classList.toggle('on',b===el));loadNin(true);return}
  if(el=t.closest('[data-gp-plat]')){GPS.plat=el.dataset.gpPlat;$$('[data-gp-plat]').forEach(b=>b.classList.toggle('on',b===el));loadFree();return}
  if(el=t.closest('[data-gp-type]')){GPS.type=el.dataset.gpType;$$('[data-gp-type]').forEach(b=>b.classList.toggle('on',b===el));loadFree();return}
  if(t.closest('[data-retry-nin]')){loadNin(true);return}
@@ -920,7 +1044,7 @@ document.addEventListener('keydown',e=>{
 $('#cartBtn').onclick=openDrawer;$('#dClose').onclick=closeDrawer;$('#scrim').onclick=closeDrawer;
 
 /* ---------- Nintendo catalog (RAWG) ---------- */
-const NIN={tab:'pop',q:'',plat:'all',page:1,tok:0,loading:false,init:false,plats:null,seen:new Set()};
+const NIN={tab:'pop',q:'',plat:'all',page:1,tok:0,loading:false,init:false,plats:null,seen:new Set(),view:store.get('ninView','grid')==='list'?'list':'grid'};
 const dayOff=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
 const NIN_TABS={
  pop:{l:'Popular',p:()=>({ordering:'-added'})},
@@ -941,6 +1065,11 @@ function ninSetup(msg=''){
 function initNin(){
  if(NIN.init)return;NIN.init=true;
  $('#ninTabs').innerHTML=Object.entries(NIN_TABS).map(([k,t])=>`<button class="seg ${k===NIN.tab?'on':''}" data-nin-tab="${k}">${t.l}</button>`).join('');
+ $('#ninView').innerHTML=[['grid','Grid'],['list','List']].map(([k,l])=>`<button class="seg ${k===NIN.view?'on':''}" data-nin-view="${k}">${l}</button>`).join('');
+ if(PRICE_API){
+  $('#ninSub').textContent='The Switch library with ratings, release dates and live Nintendo eShop prices. Open a game for US, Canada and Mexico pricing.';
+  $('#ninCredit').insertAdjacentHTML('beforeend',' · Prices from the Nintendo eShop');
+ }
  let t;
  $('#ninQ').addEventListener('input',e=>{clearTimeout(t);t=setTimeout(()=>{NIN.q=e.target.value.trim();loadNin(true)},350)});
  $('#ninPlat').addEventListener('change',e=>{NIN.plat=e.target.value;loadNin(true)});
@@ -950,7 +1079,8 @@ async function loadNin(reset){
  if(!rawgKey()){ninSetup();return}
  $('#ninSetup').hidden=true;$('#ninMain').hidden=false;
  const grid=$('#nGrid');
- if(reset){NIN.page=1;NIN.seen=new Set();grid.innerHTML=skRow(9,true).replace(/class="skcard wide"/g,'class="skcard wide" style="flex:initial"');$('#ninMore').hidden=true}
+ grid.className=NIN.view==='list'?'list':'grid wide';
+ if(reset){NIN.page=1;NIN.seen=new Set();grid.innerHTML=NIN.view==='list'?Array.from({length:8},()=>'<div class="sk lsk"></div>').join(''):skRow(9,true).replace(/class="skcard wide"/g,'class="skcard wide" style="flex:initial"');$('#ninMore').hidden=true}
  else if(NIN.loading)return;
  const tok=++NIN.tok;NIN.loading=true;$('#ninMore').disabled=true;
  try{
@@ -963,7 +1093,8 @@ async function loadNin(reset){
   if(tok!==NIN.tok)return;
   const list=reg((r.results||[]).map(nnorm)).filter(it=>{if(NIN.seen.has(it.id))return false;NIN.seen.add(it.id);return true});
   if(reset)grid.innerHTML='';
-  grid.insertAdjacentHTML('beforeend',list.map(it=>card(it,'',true)).join(''));
+  grid.insertAdjacentHTML('beforeend',list.map(it=>NIN.view==='list'?ninRow(it):card(it,'',true)).join(''));
+  decorateNin(list);
   if(reset&&!list.length)grid.innerHTML='<div class="empty" style="grid-column:1/-1"><h3>No games found</h3>Try a different search or tab.</div>';
   $('#ninMore').hidden=!r.next;NIN.page++;
  }catch(e){
@@ -1013,18 +1144,49 @@ async function openNin(rid){
     <div class="desc">${descHTML}</div>
    </div>
    <aside class="buy">
+    ${PRICE_API?'<div id="eshopBox" class="eshop"><div class="sk" style="height:150px"></div></div>':''}
     <div class="bs"><b style="color:var(--txt)">Where to buy</b></div>
     ${links.length?links.map((l,i)=>`<a class="btn ${i===0?'primary':''}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.name)} ${ICON.ext}</a>`).join(''):'<p class="mut small">No store links are listed for this game yet.</p>'}
-    <p class="mut small">Nintendo sets prices per region on the eShop, so check the store page for today's price.</p>
+    <p class="mut small">${PRICE_API?'Prices come from the Nintendo eShop and are cached for up to an hour. Confirm on the store page before you buy.':'Nintendo sets prices per region on the eShop, so check the store page for today\'s price.'}</p>
     <button class="btn ghost ${inW?'on':''}" data-wish="${esc(id)}">${ICON.heart}${inW?'In wishlist':'Add to wishlist'}</button>
     <div class="links">${g.metacritic_url?`<a href="${esc(safeUrl(g.metacritic_url))}" target="_blank" rel="noopener">Metacritic</a>`:''}${g.website?`<a href="${esc(safeUrl(g.website))}" target="_blank" rel="noopener">Official site</a>`:''}</div>
     <div class="low">Game data by <a href="https://rawg.io" target="_blank" rel="noopener" style="color:var(--acc2)">RAWG</a></div>
    </aside>
   </div>`;
+  if(PRICE_API)fillEshop(id,it.title);
  }catch(e){
   if(state.openId!==id)return;
   const msg=e.message==='nokey'||/40[13]/.test(e.message)?'Add a valid RAWG key on the Nintendo page to see game details.':'The game service didn\'t respond. Try again in a moment.';
   $('#mbox').innerHTML=`<div style="padding:60px 30px;text-align:center"><h2 style="margin-bottom:8px">Couldn't load this game</h2><p style="color:var(--mut);margin-bottom:20px">${esc(msg)}</p><button class="btn primary" data-close>Close</button></div>`;
+ }
+}
+
+const REGION_NAMES={US:'United States',CA:'Canada',MX:'Mexico'};
+async function fillEshop(id,title){
+ const set=h=>{const b=$('#eshopBox');if(b&&state.openId===id)b.innerHTML=h};
+ try{
+  const res=(await lookupTitles([title],'US,CA,MX'))[0];
+  if(state.openId!==id)return;
+  if(!res||!res.match){set('<p class="mut small">No Nintendo eShop price found for this game. It may not be sold on the eShop, or the names differ.</p>');return}
+  const e=eshopOf(res,'US');
+  if(state.items[id]){state.items[id].eshop=e;applyPrice(id)}
+  const price=e.sale!=null?e.sale:e.regular;
+  const top=price==null
+   ?`<div class="mut">${e.status==='unreleased'?'Not yet available':'No price listed yet'}</div>`
+   :`<div class="bp">${e.sale!=null&&e.regular>0?`<span class="off">${e.sale===0?'FREE':'-'+salePct(e)+'%'}</span><s>${money(e.regular,e.currency)}</s>`:''}<b>${money(price,e.currency)}</b></div>`;
+  const end=e.sale!=null&&e.saleEnds&&!isNaN(new Date(e.saleEnds))?`<div class="mut small">Sale ends ${new Date(e.saleEnds).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</div>`:'';
+  const rows=['US','CA','MX'].filter(c=>res.prices&&res.prices[c]).map(c=>{
+   const p=res.prices[c];
+   const v=p.sale!=null?`<s>${money(p.regular,p.currency)}</s> <b>${money(p.sale,p.currency)}</b>`:p.regular!=null?`<b>${money(p.regular,p.currency)}</b>`:'<span class="mut">Not available</span>';
+   return `<div class="rrow"><span>${REGION_NAMES[c]}</span><span>${v}</span></div>`;
+  }).join('');
+  const link=safeUrl(res.match.url);
+  set(`<div class="rtitle">Nintendo eShop</div>${top}${end}
+   ${link!=='#'?`<a class="btn primary" href="${esc(link)}" target="_blank" rel="noopener">View on Nintendo eShop ${ICON.ext}</a>`:''}
+   ${rows?`<div>${rows}</div>`:''}
+   ${res.match.exact?'':`<p class="mut small">Matched to “${esc(res.match.title)}”. If that's the wrong game, check the store page.</p>`}`);
+ }catch(err){
+  set('<p class="mut small">Couldn\'t load Nintendo eShop prices right now. The store links below still work.</p>');
  }
 }
 
