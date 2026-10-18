@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vantage — Discover & compare PC game deals</title>
+<meta name="description" content="Vantage is a sleek game storefront that compares live prices across Steam, GOG, Humble, Fanatical and more.">
+<meta name="theme-color" content="#090b10">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237c5cff'/%3E%3Cstop offset='1' stop-color='%2338d4f5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M7 9l9 15 9-15h-4l-5 9-5-9z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#090b10;--bg2:#0e1119;--panel:#141824;--panel2:#1b2030;--line:#252b3d;--txt:#eef1f8;--mut:#8b93a9;--acc:#7c5cff;--acc2:#38d4f5;--good:#37d67a;--warn:#f5b73b;--bad:#ef5b5b;--r:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;line-height:1.45;min-height:100vh;-webkit-font-smoothing:antialiased}
+body.lock{overflow:hidden}
+a{color:inherit;text-decoration:none}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0}
+img{display:block;max-width:100%}
+::selection{background:var(--acc);color:#fff}
+::-webkit-scrollbar{height:8px;width:10px}::-webkit-scrollbar-thumb{background:#2a3148;border-radius:8px}::-webkit-scrollbar-track{background:transparent}
+.wrap{max-width:1360px;margin:0 auto;padding:0 28px}
+
+/* header */
+header{position:sticky;top:0;z-index:50;background:rgba(9,11,16,.78);backdrop-filter:blur(16px) saturate(1.4);border-bottom:1px solid var(--line)}
+.hbar{display:flex;align-items:center;gap:28px;height:68px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.02em}
+.logo i{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:grid;place-items:center;box-shadow:0 6px 20px rgba(124,92,255,.4)}
+.logo svg{width:18px;height:18px}
+nav{display:flex;gap:4px}
+nav a{padding:8px 14px;border-radius:10px;color:var(--mut);font-weight:600;font-size:14px;transition:.15s}
+nav a:hover{color:var(--txt);background:var(--panel)}
+nav a.on{color:#fff;background:var(--panel2)}
+.search{position:relative;flex:1;max-width:520px;margin-left:auto}
+.search input{width:100%;height:42px;border-radius:12px;background:var(--panel);border:1px solid var(--line);padding:0 44px 0 42px;outline:0;transition:.15s}
+.search input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(124,92,255,.2)}
+.search .si{position:absolute;left:13px;top:11px;width:20px;height:20px;color:var(--mut);pointer-events:none}
+.search kbd{position:absolute;right:11px;top:10px;font:600 12px Inter;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:1px 7px;background:var(--bg2)}
+.sug{position:absolute;top:50px;left:0;right:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.6);display:none}
+.sug.open{display:block}
+.sug button{display:flex;align-items:center;gap:12px;width:100%;padding:9px 12px;text-align:left}
+.sug button:hover,.sug button.hl{background:var(--panel2)}
+.sug img{width:92px;height:43px;object-fit:cover;border-radius:6px;background:var(--bg2);flex:none}
+.sug b{font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sug span{color:var(--good);font-weight:700;font-size:13px}
+.sug .none{padding:14px;color:var(--mut)}
+.iconbtn{position:relative;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--panel);border:1px solid var(--line);transition:.15s;flex:none}
+.iconbtn:hover{background:var(--panel2)}
+.iconbtn svg{width:20px;height:20px}
+.cnt{position:absolute;top:-6px;right:-6px;min-width:19px;height:19px;border-radius:10px;background:var(--acc);font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 5px}
+.cnt:empty,.cnt[data-n="0"]{display:none}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;padding:0 22px;border-radius:12px;font-weight:700;background:var(--panel2);border:1px solid var(--line);transition:.15s;white-space:nowrap}
+.btn:hover{background:#242a3f;transform:translateY(-1px)}
+.btn.primary{background:linear-gradient(135deg,var(--acc),#5a7cff);border-color:transparent;color:#fff;box-shadow:0 8px 24px rgba(124,92,255,.35)}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn.ghost{background:transparent}
+.btn.sm{height:36px;padding:0 14px;font-size:13px;border-radius:10px}
+.btn svg{width:18px;height:18px}
+.btn.on{color:var(--bad);border-color:rgba(239,91,91,.4)}
+
+main{padding-bottom:60px}
+.view[hidden]{display:none}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1fr 280px;gap:18px;margin-top:26px;height:480px}
+.hero-main{position:relative;border-radius:20px;overflow:hidden;background:var(--panel);cursor:pointer}
+.hero-main>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:zoom 8s ease-out forwards}
+@keyframes zoom{from{transform:scale(1.06)}to{transform:scale(1)}}
+.hero-main::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(9,11,16,.92) 0%,rgba(9,11,16,.55) 42%,transparent 75%),linear-gradient(0deg,rgba(9,11,16,.85),transparent 50%)}
+.hero-in{position:absolute;z-index:2;left:40px;bottom:40px;max-width:520px;animation:rise .5s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.tag{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--acc2);margin-bottom:10px}
+.hero-in h1{font-size:44px;line-height:1.05;letter-spacing:-.03em;font-weight:800;margin-bottom:14px;text-shadow:0 4px 30px rgba(0,0,0,.6)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:8px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);font-size:12.5px;font-weight:600}
+.chip.mc{background:rgba(55,214,122,.18);color:var(--good)}.chip.mc.mid{background:rgba(245,183,59,.18);color:var(--warn)}.chip.mc.low{background:rgba(239,91,91,.18);color:var(--bad)}
+.pricebox{display:flex;align-items:center;gap:10px;margin-bottom:20px;font-size:15px}
+.pricebox b{font-size:22px;font-weight:800}
+.pricebox s{color:var(--mut)}
+.off{background:var(--good);color:#04210f;font-weight:800;font-size:13px;border-radius:7px;padding:2px 8px}
+.hero-act{display:flex;gap:10px}
+.hero-side{display:flex;flex-direction:column;gap:8px}
+.hs{position:relative;flex:1;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;text-align:left;background:transparent;transition:.2s;overflow:hidden}
+.hs:hover{background:var(--panel)}
+.hs.on{background:var(--panel2)}
+.hs img{width:64px;height:64px;border-radius:10px;object-fit:cover;background:var(--bg2);flex:none}
+.hs span{font-weight:600;font-size:14px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hs .prog{position:absolute;left:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--acc),var(--acc2));width:0}
+.hs.on .prog{animation:prog 6.5s linear forwards}
+.hero:hover .prog{animation-play-state:paused}
+@keyframes prog{to{width:100%}}
+
+/* rows */
+.row{margin-top:42px}
+.rh{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.rh h2{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.rh a{color:var(--acc2);font-weight:600;font-size:14px;cursor:pointer}
+.rh a:hover{text-decoration:underline}
+.rh .arr{margin-left:auto;display:flex;gap:8px}
+.rh .arr button{width:36px;height:36px;border-radius:10px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center}
+.rh .arr button:hover{background:var(--panel2)}
+.rh .arr svg{width:16px;height:16px}
+.track{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:8px;scrollbar-width:thin}
+.track .card{flex:0 0 200px;scroll-snap-align:start}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:20px}
+
+/* card */
+.card{cursor:pointer;outline:0;transition:transform .2s}
+.card:hover{transform:translateY(-4px)}
+.card:focus-visible .art{box-shadow:0 0 0 3px var(--acc)}
+.art{position:relative;aspect-ratio:2/3;border-radius:14px;overflow:hidden;background:linear-gradient(160deg,var(--panel2),var(--bg2));transition:box-shadow .2s}
+.card:hover .art{box-shadow:0 14px 40px rgba(0,0,0,.55),0 0 0 1px rgba(124,92,255,.5)}
+.art img{width:100%;height:100%;object-fit:cover}
+.art.noimg::before{content:attr(data-t);position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:16px;font-weight:700;color:var(--mut)}
+.badge{position:absolute;left:10px;top:10px;background:var(--good);color:#04210f;font-weight:800;font-size:12.5px;border-radius:7px;padding:2px 8px}
+.badge.free{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff}
+.heart{position:absolute;right:8px;top:8px;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(9,11,16,.7);backdrop-filter:blur(6px);opacity:0;transform:scale(.9);transition:.15s}
+.card:hover .heart,.heart.on,.card:focus-within .heart{opacity:1;transform:none}
+.heart svg{width:18px;height:18px}
+.heart.on{color:var(--bad)}
+.heart.on svg{fill:currentColor}
+.drop{position:absolute;left:10px;bottom:10px;background:var(--warn);color:#2b1d00;font-weight:800;font-size:11.5px;border-radius:7px;padding:2px 8px}
+.meta{padding:12px 2px 0}
+.meta .t{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meta .p{display:flex;align-items:center;gap:8px;margin-top:4px;font-size:14px}
+.meta .p s{color:var(--mut);font-size:13px}
+.meta .p b{font-weight:700}
+.meta .p .free{color:var(--acc2)}
+
+/* skeleton */
+.sk{background:linear-gradient(100deg,var(--panel) 30%,var(--panel2) 50%,var(--panel) 70%);background-size:200% 100%;animation:sh 1.3s infinite linear;border-radius:14px}
+@keyframes sh{to{background-position:-200% 0}}
+.skcard{flex:0 0 200px}.skcard .sk{aspect-ratio:2/3}.skcard i{display:block;height:14px;margin-top:12px;width:70%}
+.err{padding:30px;border:1px dashed var(--line);border-radius:14px;color:var(--mut);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+
+/* browse */
+.page-h{margin:36px 0 22px}
+.page-h h1{font-size:34px;font-weight:800;letter-spacing:-.03em}
+.page-h p{color:var(--mut);margin-top:4px}
+.browse{display:grid;grid-template-columns:260px 1fr;gap:30px;align-items:start}
+.filters{position:sticky;top:88px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:18px}
+.filters label{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin-bottom:7px}
+.sel,.filters input[type=text]{width:100%;height:40px;border-radius:10px;background:var(--bg2);border:1px solid var(--line);padding:0 12px;outline:0;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%238b93a9' stroke-width='2'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.sel:focus{border-color:var(--acc)}
+.filters input[type=text]{background-image:none;padding-right:12px}
+.chk{display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:500}
+.chk input{appearance:none;-webkit-appearance:none;width:20px;height:20px;border-radius:6px;border:1px solid var(--line);background:var(--bg2);display:grid;place-items:center;cursor:pointer}
+.chk input:checked{background:var(--acc);border-color:var(--acc)}
+.chk input:checked::after{content:"";width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.more{display:flex;justify-content:center;margin-top:34px}
+.empty{padding:70px 20px;text-align:center;color:var(--mut)}
+.empty h3{color:var(--txt);font-size:20px;margin-bottom:6px}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:80;display:none;overflow-y:auto;background:rgba(4,5,8,.8);backdrop-filter:blur(8px);padding:40px 20px}
+.modal.open{display:block;animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.mbox{max-width:1040px;margin:0 auto;background:var(--bg2);border:1px solid var(--line);border-radius:22px;overflow:hidden;animation:rise .3s both;box-shadow:0 40px 100px rgba(0,0,0,.7)}
+.mhero{position:relative;height:340px;background:var(--panel)}
+.mhero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mhero::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,var(--bg2) 0%,rgba(14,17,25,.3) 60%,rgba(14,17,25,.1))}
+.mhero .in{position:absolute;z-index:2;left:36px;right:36px;bottom:22px}
+.mhero h2{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1.08;margin-bottom:12px}
+.x{position:absolute;z-index:3;right:16px;top:16px;width:40px;height:40px;border-radius:12px;background:rgba(9,11,16,.7);backdrop-filter:blur(6px);display:grid;place-items:center}
+.x:hover{background:rgba(9,11,16,.95)}
+.x svg{width:18px;height:18px}
+.mbody{display:grid;grid-template-columns:1fr 320px;gap:32px;padding:10px 36px 36px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:28px}
+.fact{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.fact small{display:block;color:var(--mut);font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
+.fact b{font-weight:700}
+.mbody h3{font-size:16px;font-weight:700;margin-bottom:12px}
+.stores{display:flex;flex-direction:column;gap:8px}
+.srow{display:grid;grid-template-columns:28px 1fr auto auto auto;gap:14px;align-items:center;padding:11px 14px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.srow.best{border-color:rgba(55,214,122,.5);background:linear-gradient(90deg,rgba(55,214,122,.08),var(--panel))}
+.srow img{width:24px;height:24px;border-radius:6px}
+.srow .n{font-weight:600}
+.srow s{color:var(--mut);font-size:13px}
+.srow .pr{font-weight:800;min-width:60px;text-align:right}
+.buy{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;align-self:start;position:sticky;top:20px;display:flex;flex-direction:column;gap:12px}
+.buy .bp{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.buy .bp b{font-size:30px;font-weight:800;letter-spacing:-.02em}
+.buy .bp s{color:var(--mut)}
+.buy .bs{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:13px}
+.buy .bs img{width:18px;height:18px;border-radius:4px}
+.buy .btn{width:100%}
+.low{font-size:13px;color:var(--mut);padding-top:10px;border-top:1px solid var(--line)}
+.low b{color:var(--txt)}
+.links{display:flex;gap:14px;flex-wrap:wrap;font-size:13px}
+.links a{color:var(--acc2);font-weight:600}.links a:hover{text-decoration:underline}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(4,5,8,.6);z-index:90;opacity:0;pointer-events:none;transition:.2s}
+.scrim.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100vw;background:var(--bg2);border-left:1px solid var(--line);z-index:95;transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
+.drawer.open{transform:none}
+.dh{display:flex;align-items:center;justify-content:space-between;padding:20px 22px;border-bottom:1px solid var(--line)}
+.dh h3{font-size:19px;font-weight:800}
+.dl{flex:1;overflow-y:auto;padding:14px 22px}
+.line{display:grid;grid-template-columns:96px 1fr auto;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);align-items:center}
+.line img{width:96px;height:45px;object-fit:cover;border-radius:8px;background:var(--panel)}
+.line .lt{font-weight:600;font-size:14px;line-height:1.25}
+.line .ls{font-size:12.5px;color:var(--mut);margin-top:2px}
+.line .lp{text-align:right;font-weight:700}
+.line .lp button{display:block;margin:4px 0 0 auto;font-size:12px;color:var(--mut);font-weight:500}
+.line .lp button:hover{color:var(--bad)}
+.df{padding:20px 22px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.tot{display:flex;justify-content:space-between;font-size:18px;font-weight:800}
+.df small{color:var(--mut);font-size:12px}
+.df .btn{width:100%}
+
+/* toast */
+.toasts{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:120;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:var(--panel2);border:1px solid var(--line);padding:11px 18px;border-radius:12px;font-weight:600;box-shadow:0 12px 40px rgba(0,0,0,.5);animation:rise .25s both}
+
+footer{border-top:1px solid var(--line);padding:34px 0;color:var(--mut);font-size:13px}
+footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}
+footer p{max-width:700px}
+footer a{color:var(--acc2)}
+
+@media(max-width:1000px){
+ .hero{grid-template-columns:1fr;height:auto}.hero-main{height:420px}.hero-side{flex-direction:row;overflow-x:auto}.hs{flex:0 0 220px}
+ .browse{grid-template-columns:1fr}.filters{position:static;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+ .mbody{grid-template-columns:1fr}.buy{position:static;order:-1}
+ nav{display:none}
+}
+@media(max-width:640px){
+ .wrap{padding:0 16px}.hbar{gap:12px}.logo span{display:none}.search kbd{display:none}
+ .hero-in{left:20px;right:20px;bottom:22px}.hero-in h1{font-size:30px}.hero-main{height:380px}
+ .mhero{height:250px}.mhero h2{font-size:26px}.mbody{padding:6px 18px 24px}.mhero .in{left:18px;right:18px}
+ .srow{grid-template-columns:24px 1fr auto;}.srow s,.srow .off{display:none}.srow a.btn{grid-column:1/-1}
+ .track .card{flex-basis:160px}.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+ <div class="wrap hbar">
+  <a class="logo" href="#/"><i><svg viewBox="0 0 24 24" fill="#fff"><path d="M3 5l9 15L21 5h-4l-5 9-5-9z"/></svg></i><span>Vantage</span></a>
+  <nav>
+   <a href="#/" data-nav="home">Discover</a>
+   <a href="#/browse" data-nav="browse">Browse</a>
+   <a href="#/wishlist" data-nav="wishlist">Wishlist</a>
+  </nav>
+  <div class="search">
+   <svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+   <input id="q" type="search" placeholder="Search games…" autocomplete="off" spellcheck="false" aria-label="Search games">
+   <kbd>/</kbd>
+   <div class="sug" id="sug"></div>
+  </div>
+  <a class="iconbtn" href="#/wishlist" title="Wishlist" aria-label="Wishlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-7.5-4.6-9.5-9.4C1.2 8.3 3 5 6.3 5c2 0 3.6 1.1 4.4 2.6h.6C12.1 6.100 13.700 5 15.700 5 19 5 20.800 8.300 19.500 11.600 19.500 11.600 12 21 12 21z"/></svg><span class="cnt" id="wcnt" data-n="0"></span></a>
+  <button class="iconbtn" id="cartBtn" title="Cart" aria-label="Cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11.500a2 2 0 002 1.500h7.800a2 2 0 002-1.500L21 8H6"/><circle cx="10" cy="21" r="1"/><circle cx="18" cy="21" r="1"/></svg><span class="cnt" id="ccnt" data-n="0"></span></button>
+ </div>
+</header>
+
+<main>
+ <div class="view wrap" id="home">
+  <section class="hero" id="hero"><div class="hero-main sk"></div><div class="hero-side" id="heroSide"></div></section>
+  <div id="rows"></div>
+ </div>
+
+ <div class="view wrap" id="browse" hidden>
+  <div class="page-h"><h1>Browse games</h1><p>Live prices compared across every major PC storefront.</p></div>
+  <div class="browse">
+   <aside class="filters">
+    <div><label for="fTitle">Title</label><input type="text" id="fTitle" placeholder="Search by name"></div>
+    <div><label for="fSort">Sort by</label><select class="sel" id="fSort"></select></div>
+    <div><label for="fStore">Store</label><select class="sel" id="fStore"><option value="">All stores</option></select></div>
+    <div><label for="fMax">Price</label><select class="sel" id="fMax">
+      <option value="">Any price</option><option value="0">Free</option><option value="5">Under $5</option><option value="10">Under $10</option><option value="20">Under $20</option><option value="30">Under $30</option><option value="40">Under $40</option></select></div>
+    <div><label for="fMc">Minimum Metacritic</label><select class="sel" id="fMc">
+      <option value="">Any</option><option value="60">60+</option><option value="70">70+</option><option value="80">80+</option><option value="90">90+</option></select></div>
+    <label class="chk"><input type="checkbox" id="fSale" checked> On sale only</label>
+    <label class="chk"><input type="checkbox" id="fAAA"> AAA titles only</label>
+    <button class="btn sm ghost" id="fReset">Reset filters</button>
+   </aside>
+   <section><div class="grid" id="bGrid"></div><div class="more"><button class="btn" id="bMore" hidden>Load more</button></div></section>
+  </div>
+ </div>
+
+ <div class="view wrap" id="wishlist" hidden>
+  <div class="page-h"><h1>Your wishlist</h1><p id="wSub">Saved in this browser. Price drops are highlighted.</p></div>
+  <div class="grid" id="wGrid"></div>
+ </div>
+</main>
+
+<footer>
+ <div class="wrap">
+  <p><b style="color:var(--txt)">Vantage</b> compares prices across digital storefronts. Purchases are completed on each store's own site. Pricing data from <a href="https://www.cheapshark.com" target="_blank" rel="noopener">CheapShark</a>; artwork served from the Steam CDN. All trademarks belong to their owners. Vantage is an independent fan project and isn't affiliated with any storefront.</p>
+  <p style="text-align:right">Made by CodyMKW &amp; Joseph</p>
+ </div>
+</footer>
+
+<div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Cart">
+ <div class="dh"><h3>Your cart</h3><button class="iconbtn" id="dClose" aria-label="Close cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+ <div class="dl" id="dl"></div>
+ <div class="df" id="df"></div>
+</aside>
+<div class="toasts" id="toasts"></div>
+
+<script>
+const API='https://www.cheapshark.com/api/1.0';
+const CS='https://www.cheapshark.com';
+const STEAM='https://cdn.cloudflare.steamstatic.com/steam/apps/';
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>n===0?'Free':'$'+n.toFixed(2);
+const redirect=id=>CS+'/redirect?dealID='+encodeURIComponent(id);
+const ICON={
+ heart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-7.500-4.600-9.500-9.400C1.200 8.300 3 5 6.300 5c2 0 3.600 1.100 4.400 2.600h.6C12.100 6.100 13.700 5 15.700 5 19 5 20.800 8.300 19.500 11.600 19.500 11.600 12 21 12 21z"/></svg>',
+ cart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.400 11.500a2 2 0 002 1.500h7.800a2 2 0 002-1.500L21 8H6"/><circle cx="10" cy="21" r="1"/><circle cx="18" cy="21" r="1"/></svg>',
+ x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+ ext:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"/></svg>',
+ l:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.500" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
+ r:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.500" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>'
+};
+
+/* ---------- state & storage ---------- */
+const store={
+ get(k,d){try{return JSON.parse(localStorage.getItem('vantage:'+k))??d}catch{return d}},
+ set(k,v){try{localStorage.setItem('vantage:'+k,JSON.stringify(v))}catch{}}
+};
+const state={items:{},stores:{},wish:store.get('wish',{}),cart:store.get('cart',{}),last:'#/',view:null,homeLoaded:false,openId:null};
+
+/* ---------- API ---------- */
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function api(path,ttl=600){
+ const key='vantage:c:'+path;
+ try{const c=JSON.parse(sessionStorage.getItem(key)||'null');if(c&&Date.now()-c.t<ttl*1000)return c.d}catch{}
+ let r;
+ for(let i=0;i<3;i++){
+  r=await fetch(API+path);
+  if(r.status!==429)break;
+  await sleep(700*(i+1));
+ }
+ if(!r.ok)throw new Error('HTTP '+r.status);
+ const d=await r.json();
+ try{sessionStorage.setItem(key,JSON.stringify({t:Date.now(),d}))}catch{}
+ return d;
+}
+const qs=o=>'?'+new URLSearchParams(Object.fromEntries(Object.entries(o).filter(([,v])=>v!==''&&v!=null))).toString();
+const norm=d=>({id:d.gameID,dealID:d.dealID,title:d.title||d.external||'Untitled',sale:+d.salePrice,normal:+d.normalPrice,savings:Math.round(+d.savings||0),mc:+d.metacriticScore||0,pct:+d.steamRatingPercent||0,rtext:d.steamRatingText||'',rcount:+d.steamRatingCount||0,app:d.steamAppID||'',release:+d.releaseDate||0,store:d.storeID,thumb:d.thumb||''});
+function dedupe(list){const m=new Map();for(const it of list){const o=m.get(it.id);if(!o||it.sale<o.sale)m.set(it.id,it)}return[...m.values()]}
+function reg(list){list.forEach(it=>{state.items[it.id]={...(state.items[it.id]||{}),...it}});return list}
+async function loadStores(){
+ try{const s=await api('/stores',86400);s.filter(x=>x.isActive==1).forEach(x=>state.stores[x.storeID]={name:x.storeName,logo:CS+x.images.logo})}catch{}
+}
+const storeName=id=>state.stores[id]?.name||'Store '+id;
+const storeLogo=id=>state.stores[id]?.logo||'';
+
+/* ---------- images ---------- */
+function urls(it,kind){
+ const a=it.app,t=it.thumb;
+ if(!a)return[t].filter(Boolean);
+ if(kind==='hero')return[STEAM+a+'/library_hero.jpg',STEAM+a+'/header.jpg',t].filter(Boolean);
+ if(kind==='card')return[STEAM+a+'/library_600x900.jpg',STEAM+a+'/header.jpg',t].filter(Boolean);
+ return[STEAM+a+'/header.jpg',t].filter(Boolean);
+}
+function img(it,kind,cls=''){
+ const u=urls(it,kind);if(!u.length)return'';
+ return `<img class="${cls}" src="${esc(u[0])}" data-f="${esc(u.slice(1).join('|'))}" alt="${esc(it.title)}" loading="${kind==='hero'?'eager':'lazy'}" onerror="imgFail(this)">`;
+}
+function imgFail(el){
+ const f=el.dataset.f?el.dataset.f.split('|'):[];
+ if(f.length){el.src=f.shift();el.dataset.f=f.join('|')}
+ else{el.style.visibility='hidden';el.parentElement.classList.add('noimg')}
+}
+
+/* ---------- UI bits ---------- */
+function toast(msg){
+ const t=document.createElement('div');t.className='toast';t.textContent=msg;$('#toasts').append(t);
+ setTimeout(()=>{t.style.transition='.3s';t.style.opacity=0;setTimeout(()=>t.remove(),300)},2200);
+}
+const mcClass=n=>n>=75?'':n>=50?'mid':'low';
+function priceHTML(it){
+ if(it.sale===0)return `<b class="free">Free</b>`+(it.normal>0?` <s>${fmt(it.normal)}</s>`:'');
+ return (it.savings>0?`<s>${fmt(it.normal)}</s>`:'')+`<b>${fmt(it.sale)}</b>`;
+}
+function card(it,extra=''){
+ const w=!!state.wish[it.id];
+ const badge=it.sale===0?'<span class="badge free">FREE</span>':it.savings>0?`<span class="badge">-${it.savings}%</span>`:'';
+ return `<article class="card" tabindex="0" role="button" data-open="${esc(it.id)}" aria-label="${esc(it.title)}">
+  <div class="art" data-t="${esc(it.title)}">${img(it,'card')}${badge}${extra}
+   <button class="heart ${w?'on':''}" data-wish="${esc(it.id)}" aria-label="${w?'Remove from':'Add to'} wishlist" title="Wishlist">${ICON.heart}</button></div>
+  <div class="meta"><div class="t" title="${esc(it.title)}">${esc(it.title)}</div><div class="p">${priceHTML(it)}</div></div></article>`;
+}
+const skRow=n=>Array.from({length:n},()=>'<div class="skcard"><div class="sk"></div><i class="sk"></i></div>').join('');
+function updateCounts(){
+ const w=Object.keys(state.wish).length,c=Object.keys(state.cart).length;
+ $('#wcnt').textContent=w||'';$('#wcnt').dataset.n=w;
+ $('#ccnt').textContent=c||'';$('#ccnt').dataset.n=c;
+}
+function syncHearts(){
+ $$('[data-wish]').forEach(b=>{const on=!!state.wish[b.dataset.wish];b.classList.toggle('on',on);if(b.classList.contains('btn'))b.innerHTML=ICON.heart+(on?'In wishlist':'Add to wishlist')})
+}
+function toggleWish(id){
+ const it=state.items[id];if(!it)return;
+ if(state.wish[id]){delete state.wish[id];toast('Removed from wishlist')}
+ else{state.wish[id]={...it,added:it.sale};toast('Added to wishlist')}
+ store.set('wish',state.wish);updateCounts();syncHearts();
+ if(state.view==='wishlist')renderWishlist(false);
+}
+function addCart(id){
+ const it=state.items[id];if(!it)return;
+ if(state.cart[id]){toast('Already in your cart');openDrawer();return}
+ state.cart[id]={id,dealID:it.dealID,title:it.title,sale:it.sale,normal:it.normal,app:it.app,thumb:it.thumb,store:it.store};
+ store.set('cart',state.cart);updateCounts();renderCart();toast('Added to cart');
+}
+
+/* ---------- Home ---------- */
+const PRESETS={
+ top:{sort:'Deal Rating',sale:true},
+ rated:{sort:'Metacritic',sale:true,mc:'80'},
+ under10:{sort:'Metacritic',sale:true,max:'10',mc:'70'},
+ free:{sort:'Metacritic',sale:false,max:'0'},
+ savings:{sort:'Biggest savings',sale:true,mc:'70'}
+};
+const ROWS=[
+ {key:'free',title:'Free right now',preset:'free',q:{pageSize:30,upperPrice:0,sortBy:'Metacritic',desc:1},filter:i=>i.sale===0},
+ {key:'top',title:'Top deals',preset:'top',q:{pageSize:40,sortBy:'Deal Rating',onSale:1}},
+ {key:'rated',title:'Critically acclaimed, on sale',preset:'rated',q:{pageSize:40,sortBy:'Metacritic',desc:1,onSale:1,metacritic:85,lowerPrice:1}},
+ {key:'under10',title:'Great games under $10',preset:'under10',q:{pageSize:40,sortBy:'Metacritic',desc:1,upperPrice:10,lowerPrice:1,metacritic:75,onSale:1}},
+ {key:'savings',title:'Deepest discounts',preset:'savings',q:{pageSize:40,sortBy:'Savings',desc:1,onSale:1,metacritic:75,lowerPrice:1}}
+];
+let heroTimer=null,heroList=[],heroIdx=0;
+
+async function loadHome(){
+ if(state.homeLoaded)return;state.homeLoaded=true;
+ $('#rows').innerHTML=ROWS.map(r=>`<section class="row" id="row-${r.key}"><div class="rh"><h2>${r.title}</h2><a data-preset="${r.preset}">See all</a><div class="arr"><button data-scroll="-1" aria-label="Scroll left">${ICON.l}</button><button data-scroll="1" aria-label="Scroll right">${ICON.r}</button></div></div><div class="track">${skRow(8)}</div></section>`).join('');
+ await loadStores();
+ const results={};
+ const jobs=ROWS.map(async(r,i)=>{
+  await sleep(i*120);
+  try{
+   let list=dedupe(reg((await api('/deals'+qs(r.q))).map(norm)));
+   if(r.filter)list=list.filter(r.filter);
+   list=list.filter(it=>it.app||it.thumb).slice(0,20);
+   results[r.key]=list;
+   const sec=$('#row-'+r.key);
+   if(!list.length){sec.remove();return}
+   $('.track',sec).innerHTML=list.map(it=>card(it)).join('');
+  }catch(e){
+   const sec=$('#row-'+r.key);if(!sec)return;
+   $('.track',sec).innerHTML=`<div class="err">Couldn't load this section. <button class="btn sm" data-retry>Retry</button></div>`;
+  }
+ });
+ // hero from best data we have
+ try{
+  const feat=dedupe(reg((await api('/deals'+qs({pageSize:40,sortBy:'Metacritic',desc:1,onSale:1,metacritic:80,lowerPrice:1}))).map(norm))).filter(i=>i.app&&i.savings>=25);
+  heroList=feat.sort((a,b)=>b.mc*0.6+b.savings*0.4-(a.mc*0.6+a.savings*0.4)).slice(0,5);
+ }catch{}
+ await Promise.all(jobs);
+ if(heroList.length<3){heroList=[...heroList,...(results.top||[]).filter(i=>i.app&&!heroList.find(h=>h.id===i.id))].slice(0,5)}
+ if(heroList.length){heroIdx=0;renderHero()}
+ else $('#hero').innerHTML=`<div class="err" style="grid-column:1/-1">Couldn't reach the deals service. <button class="btn sm" onclick="location.reload()">Reload</button></div>`;
+}
+function renderHero(){
+ clearTimeout(heroTimer);
+ const it=heroList[heroIdx];
+ const reasons=['Featured deal','Critic favorite','Limited-time price','Top pick','Don\'t miss'];
+ $('#hero').innerHTML=`<div class="hero-main" data-open="${esc(it.id)}">${img(it,'hero')}
+  <div class="hero-in" key="${esc(it.id)}">
+   <span class="tag">${reasons[heroIdx%reasons.length]}</span>
+   <h1>${esc(it.title)}</h1>
+   <div class="chips">${it.mc?`<span class="chip mc ${mcClass(it.mc)}">Metacritic ${it.mc}</span>`:''}${it.rtext?`<span class="chip">${esc(it.rtext)}${it.pct?` · ${it.pct}%`:''}</span>`:''}<span class="chip">via ${esc(storeName(it.store))}</span></div>
+   <div class="pricebox">${it.savings>0?`<span class="off">-${it.savings}%</span><s>${fmt(it.normal)}</s>`:''}<b>${fmt(it.sale)}</b></div>
+   <div class="hero-act"><button class="btn primary">View game</button><button class="btn" data-wish="${esc(it.id)}">${ICON.heart}${state.wish[it.id]?'In wishlist':'Add to wishlist'}</button></div>
+  </div></div>
+  <div class="hero-side">${heroList.map((h,i)=>`<button class="hs ${i===heroIdx?'on':''}" data-hero="${i}">${img(h,'wide')}<span>${esc(h.title)}</span><i class="prog"></i></button>`).join('')}</div>`;
+ const main=$('.hero-main');main.classList.remove('sk');
+ heroTimer=setTimeout(()=>{heroIdx=(heroIdx+1)%heroList.length;renderHero()},6500);
+ $('#hero').onmouseenter=()=>clearTimeout(heroTimer);
+ $('#hero').onmouseleave=()=>{clearTimeout(heroTimer);heroTimer=setTimeout(()=>{heroIdx=(heroIdx+1)%heroList.length;renderHero()},3500)};
+}
+
+/* ---------- Browse ---------- */
+const SORTS={
+ 'Deal Rating':{sortBy:'Deal Rating'},
+ 'Biggest savings':{sortBy:'Savings',desc:1},
+ 'Price: low to high':{sortBy:'Price'},
+ 'Price: high to low':{sortBy:'Price',desc:1},
+ 'Metacritic score':{sortBy:'Metacritic',desc:1},
+ 'User reviews':{sortBy:'Reviews',desc:1},
+ 'Newest':{sortBy:'Release',desc:1},
+ 'Title A–Z':{sortBy:'Title'}
+};
+const F0={title:'',sort:'Deal Rating',store:'',max:'',mc:'',sale:true,aaa:false};
+let F=store.get('filters',null)||{...F0};F={...F0,...F,title:''};
+let bPage=0,bSeen=new Set(),bToken=0,bInit=false,bLoading=false;
+
+function initBrowse(){
+ if(bInit)return;bInit=true;
+ $('#fSort').innerHTML=Object.keys(SORTS).map(k=>`<option>${k}</option>`).join('');
+ const ids=Object.keys(state.stores).sort((a,b)=>storeName(a).localeCompare(storeName(b)));
+ $('#fStore').innerHTML='<option value="">All stores</option>'+ids.map(id=>`<option value="${id}">${esc(storeName(id))}</option>`).join('');
+ const bind=(id,key,type)=>{
+  const el=$(id);
+  el.addEventListener(type==='chk'?'change':type==='text'?'input':'change',()=>{
+   F[key]=type==='chk'?el.checked:el.value;
+   store.set('filters',{...F,title:''});
+   clearTimeout(bind.t);bind.t=setTimeout(()=>loadBrowse(true),type==='text'?300:0);
+  });
+ };
+ bind('#fTitle','title','text');bind('#fSort','sort');bind('#fStore','store');bind('#fMax','max');bind('#fMc','mc');bind('#fSale','sale','chk');bind('#fAAA','aaa','chk');
+ $('#fReset').onclick=()=>{F={...F0};store.set('filters',F);syncFilters();loadBrowse(true)};
+ $('#bMore').onclick=()=>loadBrowse(false);
+}
+function syncFilters(){
+ $('#fTitle').value=F.title;$('#fSort').value=F.sort;$('#fStore').value=F.store;$('#fMax').value=F.max;$('#fMc').value=F.mc;$('#fSale').checked=F.sale;$('#fAAA').checked=F.aaa;
+}
+async function loadBrowse(reset){
+ if(reset){bPage=0;bSeen=new Set();$('#bGrid').innerHTML=Array.from({length:12},()=>'<div class="skcard" style="flex:initial"><div class="sk"></div><i class="sk"></i></div>').join('');$('#bMore').hidden=true}
+ else if(bLoading)return;
+ const tok=++bToken;bLoading=true;$('#bMore').disabled=true;
+ const s=SORTS[F.sort]||SORTS['Deal Rating'];
+ const q={pageSize:24,pageNumber:bPage,sortBy:s.sortBy,desc:s.desc,title:F.title.trim(),storeID:F.store,upperPrice:F.max,metacritic:F.mc,onSale:F.sale?1:'',AAA:F.aaa?1:''};
+ try{
+  const raw=await api('/deals'+qs(q),300);
+  if(tok!==bToken)return;
+  const list=reg(raw.map(norm)).filter(it=>{if(bSeen.has(it.id))return false;bSeen.add(it.id);return true});
+  if(reset)$('#bGrid').innerHTML='';
+  $('#bGrid').insertAdjacentHTML('beforeend',list.map(it=>card(it)).join(''));
+  if(reset&&!list.length)$('#bGrid').innerHTML='<div class="empty" style="grid-column:1/-1"><h3>No games match those filters</h3>Try widening the price or score, or reset the filters.</div>';
+  $('#bMore').hidden=raw.length<24;bPage++;
+ }catch(e){
+  if(tok!==bToken)return;
+  if(reset)$('#bGrid').innerHTML='<div class="err" style="grid-column:1/-1">Couldn\'t load games. <button class="btn sm" data-retry-browse>Retry</button></div>';
+  else toast('Couldn\'t load more — try again');
+ }finally{if(tok===bToken){bLoading=false;$('#bMore').disabled=false}}
+}
+function applyPreset(name,title){
+ F={...F0,...(PRESETS[name]||{}),title:title||''};
+ store.set('filters',{...F,title:''});
+ if(location.hash==='#/browse'){syncFilters();loadBrowse(true)}else{state.pendingBrowse=true;location.hash='#/browse'}
+}
+
+/* ---------- Wishlist ---------- */
+async function renderWishlist(refresh=true){
+ const ids=Object.keys(state.wish);
+ const grid=$('#wGrid');
+ if(!ids.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1"><h3>Your wishlist is empty</h3>Tap the heart on any game to save it here.<br><br><a class="btn primary" href="#/browse">Browse games</a></div>';return}
+ const draw=()=>{grid.innerHTML=Object.values(state.wish).map(it=>{
+  const drop=it.added!=null&&it.sale<it.added-0.005?`<span class="drop">PRICE DROP</span>`:'';
+  return card(it,drop)}).join('')};
+ draw();
+ if(!refresh)return;
+ try{
+  let changed=false;
+  for(let i=0;i<ids.length;i+=25){
+   const chunk=ids.slice(i,i+25);
+   const data=await api('/games?ids='+chunk.join(','),300);
+   for(const id of chunk){
+    const g=data[id];if(!g||!g.deals||!g.deals.length||!state.wish[id])continue;
+    const best=g.deals.map(d=>({...d,p:+d.price})).sort((a,b)=>a.p-b.p)[0];
+    const w=state.wish[id];
+    if(w.sale!==best.p||w.dealID!==best.dealID){w.sale=best.p;w.normal=+best.retailPrice;w.savings=Math.round(+best.savings);w.dealID=best.dealID;w.store=best.storeID;changed=true}
+   }
+  }
+  if(changed){store.set('wish',state.wish);if(state.view==='wishlist')draw()}
+ }catch{}
+}
+
+/* ---------- Game detail ---------- */
+async function openGame(id){
+ state.openId=id;
+ const m=$('#modal');m.classList.add('open');document.body.classList.add('lock');m.scrollTop=0;
+ const hint=state.items[id];
+ $('#mbox').innerHTML=`<div class="mhero">${hint?img(hint,'hero'):''}<button class="x" data-close aria-label="Close">${ICON.x}</button><div class="in"><h2>${esc(hint?.title||'Loading…')}</h2></div></div><div class="mbody"><div><div class="sk" style="height:90px;margin-bottom:20px"></div><div class="sk" style="height:200px"></div></div><div class="sk" style="height:260px"></div></div>`;
+ try{
+  if(!Object.keys(state.stores).length)await loadStores();
+  const g=await api('/games?id='+encodeURIComponent(id),300);
+  if(state.openId!==id)return;
+  const deals=(g.deals||[]).map(d=>({store:d.storeID,dealID:d.dealID,price:+d.price,retail:+d.retailPrice,savings:Math.round(+d.savings)})).sort((a,b)=>a.price-b.price);
+  if(!deals.length)throw new Error('No deals');
+  let gi=null;
+  try{gi=(await api('/deals?id='+encodeURIComponent(deals[0].dealID),300)).gameInfo}catch{}
+  if(state.openId!==id)return;
+  const best=deals[0];
+  const it={id,dealID:best.dealID,title:g.info?.title||gi?.name||hint?.title||'Game',sale:best.price,normal:best.retail,savings:best.savings,mc:+gi?.metacriticScore||hint?.mc||0,pct:+gi?.steamRatingPercent||hint?.pct||0,rtext:gi?.steamRatingText||hint?.rtext||'',rcount:+gi?.steamRatingCount||hint?.rcount||0,app:g.info?.steamAppID||gi?.steamAppID||hint?.app||'',release:+gi?.releaseDate||hint?.release||0,store:best.store,thumb:g.info?.thumb||hint?.thumb||''};
+  state.items[id]={...state.items[id],...it};
+  const rel=it.release>0?new Date(it.release*1000).toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'}):'—';
+  const ce=g.cheapestPriceEver;
+  const ceTxt=ce?`<b>${fmt(+ce.price)}</b> in ${new Date(ce.date*1000).toLocaleDateString(undefined,{month:'long',year:'numeric'})}`:'';
+  const inW=!!state.wish[id];
+  $('#mbox').innerHTML=`
+  <div class="mhero">${img(it,'hero')}<button class="x" data-close aria-label="Close">${ICON.x}</button>
+   <div class="in"><h2>${esc(it.title)}</h2><div class="chips">${it.mc?`<span class="chip mc ${mcClass(it.mc)}">Metacritic ${it.mc}</span>`:''}${it.rtext?`<span class="chip">Steam: ${esc(it.rtext)}${it.pct?` · ${it.pct}%`:''}</span>`:''}</div></div></div>
+  <div class="mbody">
+   <div>
+    <div class="facts">
+     <div class="fact"><small>Release date</small><b>${rel}</b></div>
+     <div class="fact"><small>Publisher</small><b>${esc(gi?.publisher&&gi.publisher!=='None'?gi.publisher:'—')}</b></div>
+     <div class="fact"><small>Steam reviews</small><b>${it.rcount?it.rcount.toLocaleString()+' reviews':'—'}</b></div>
+     <div class="fact"><small>Available at</small><b>${deals.length} store${deals.length>1?'s':''}</b></div>
+    </div>
+    <h3>Compare prices</h3>
+    <div class="stores">${deals.map((d,i)=>`<div class="srow ${i===0?'best':''}">
+      ${storeLogo(d.store)?`<img src="${esc(storeLogo(d.store))}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`:'<span></span>'}
+      <span class="n">${esc(storeName(d.store))}${i===0?' <span class="off" style="margin-left:6px">Best price</span>':''}</span>
+      ${d.savings>0?`<span class="off">-${d.savings}%</span>`:'<span></span>'}
+      <span>${d.savings>0?`<s>${fmt(d.retail)}</s> `:''}<span class="pr">${fmt(d.price)}</span></span>
+      <a class="btn sm" href="${redirect(d.dealID)}" target="_blank" rel="noopener">Get ${ICON.ext}</a></div>`).join('')}</div>
+   </div>
+   <aside class="buy">
+    <div class="bp">${best.savings>0?`<span class="off">-${best.savings}%</span><s>${fmt(best.retail)}</s>`:''}<b>${fmt(best.price)}</b></div>
+    <div class="bs">Best price at ${storeLogo(best.store)?`<img src="${esc(storeLogo(best.store))}" alt="">`:''}<b style="color:var(--txt)">${esc(storeName(best.store))}</b></div>
+    <a class="btn primary" href="${redirect(best.dealID)}" target="_blank" rel="noopener">${best.price===0?'Claim for free':'Buy now'} ${ICON.ext}</a>
+    <button class="btn" data-cart="${esc(id)}">${ICON.cart}Add to cart</button>
+    <button class="btn ghost ${inW?'on':''}" data-wish="${esc(id)}">${ICON.heart}${inW?'In wishlist':'Add to wishlist'}</button>
+    ${ceTxt?`<div class="low">Lowest price ever: ${ceTxt}</div>`:''}
+    <div class="links">${it.app?`<a href="https://store.steampowered.com/app/${esc(it.app)}" target="_blank" rel="noopener">Steam page</a>`:''}${gi?.metacriticLink?`<a href="https://www.metacritic.com${esc(gi.metacriticLink)}" target="_blank" rel="noopener">Metacritic</a>`:''}</div>
+   </aside>
+  </div>`;
+ }catch(e){
+  if(state.openId!==id)return;
+  $('#mbox').innerHTML=`<div style="padding:60px 30px;text-align:center"><h2 style="margin-bottom:8px">Couldn't load this game</h2><p style="color:var(--mut);margin-bottom:20px">The price service didn't respond. Try again in a moment.</p><button class="btn primary" data-close>Close</button></div>`;
+ }
+}
+function closeModalUI(){state.openId=null;$('#modal').classList.remove('open');if(!$('#drawer').classList.contains('open'))document.body.classList.remove('lock')}
+function closeGame(){location.hash=state.last||'#/'}
+
+/* ---------- Cart ---------- */
+function openDrawer(){renderCart();$('#drawer').classList.add('open');$('#scrim').classList.add('open');document.body.classList.add('lock')}
+function closeDrawer(){$('#drawer').classList.remove('open');$('#scrim').classList.remove('open');if(!$('#modal').classList.contains('open'))document.body.classList.remove('lock')}
+function renderCart(){
+ const items=Object.values(state.cart);
+ if(!items.length){$('#dl').innerHTML='<div class="empty"><h3>Your cart is empty</h3>Add some games to compare and check out.</div>';$('#df').innerHTML='';return}
+ $('#dl').innerHTML=items.map(it=>`<div class="line">${img(it,'wide')}<div><div class="lt">${esc(it.title)}</div><div class="ls">${esc(storeName(it.store))}</div></div><div class="lp">${fmt(it.sale)}<button data-rm="${esc(it.id)}">Remove</button></div></div>`).join('');
+ const total=items.reduce((a,b)=>a+b.sale,0),was=items.reduce((a,b)=>a+(b.normal||b.sale),0);
+ $('#df').innerHTML=`<div class="tot"><span>Total</span><span>${fmt(total)}</span></div>${was>total+.005?`<small style="color:var(--good)">You save ${fmt(was-total)} vs. regular price</small>`:''}
+  <button class="btn primary" id="checkout">Check out at stores (${items.length})</button>
+  <button class="btn ghost sm" id="clearCart">Clear cart</button>
+  <small>Vantage finds the best price; payment happens on each store's own site. Your browser may ask to allow multiple tabs.</small>`;
+}
+
+/* ---------- Search suggestions ---------- */
+let sugT=0,sugTok=0,sugHl=-1,sugItems=[];
+const qEl=$('#q'),sugEl=$('#sug');
+qEl.addEventListener('input',()=>{
+ clearTimeout(sugT);const v=qEl.value.trim();
+ if(v.length<2){sugEl.classList.remove('open');return}
+ sugT=setTimeout(async()=>{
+  const tok=++sugTok;
+  try{
+   const r=await api('/games'+qs({title:v,limit:6}),300);
+   if(tok!==sugTok)return;
+   sugItems=r;sugHl=-1;
+   sugEl.innerHTML=r.length?r.map((g,i)=>`<button data-sug="${esc(g.gameID)}" data-i="${i}"><img src="${esc(g.steamAppID?STEAM+g.steamAppID+'/header.jpg':g.thumb)}" alt="" onerror="this.src='${esc(g.thumb)}'"><b>${esc(g.external)}</b><span>from ${fmt(+g.cheapest)}</span></button>`).join('')+`<button data-all><b style="color:var(--acc2)">See all results for “${esc(v)}”</b></button>`:'<div class="none">No games found.</div>';
+   sugEl.classList.add('open');
+  }catch{}
+ },220);
+});
+qEl.addEventListener('keydown',e=>{
+ const btns=$$('button',sugEl);
+ if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(!btns.length)return;sugHl=(sugHl+(e.key==='ArrowDown'?1:-1)+btns.length)%btns.length;btns.forEach((b,i)=>b.classList.toggle('hl',i===sugHl))}
+ else if(e.key==='Enter'){
+  e.preventDefault();
+  const b=btns[sugHl];
+  if(b&&b.dataset.sug){pickSug(b.dataset.sug)}
+  else searchAll();
+ }
+ else if(e.key==='Escape'){sugEl.classList.remove('open');qEl.blur()}
+});
+function pickSug(id){
+ const g=sugItems.find(x=>x.gameID===id);
+ if(g&&!state.items[id])reg([{id,dealID:g.cheapestDealID,title:g.external,sale:+g.cheapest,normal:+g.cheapest,savings:0,mc:0,pct:0,rtext:'',rcount:0,app:g.steamAppID||'',release:0,store:'',thumb:g.thumb}]);
+ sugEl.classList.remove('open');qEl.value='';qEl.blur();location.hash='#/game/'+id;
+}
+function searchAll(){
+ const v=qEl.value.trim();sugEl.classList.remove('open');if(!v)return;
+ F={...F0,sort:'Deal Rating',sale:false,title:v};
+ if(location.hash==='#/browse'){syncFilters();loadBrowse(true)}else{state.pendingBrowse=true;location.hash='#/browse'}
+ qEl.blur();
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.search'))sugEl.classList.remove('open')});
+
+/* ---------- Global events ---------- */
+document.addEventListener('click',e=>{
+ const t=e.target;let el;
+ if(el=t.closest('[data-sug]')){pickSug(el.dataset.sug);return}
+ if(t.closest('[data-all]')){searchAll();return}
+ if(el=t.closest('[data-wish]')){e.stopPropagation();e.preventDefault();toggleWish(el.dataset.wish);return}
+ if(el=t.closest('[data-cart]')){addCart(el.dataset.cart);return}
+ if(el=t.closest('[data-rm]')){delete state.cart[el.dataset.rm];store.set('cart',state.cart);updateCounts();renderCart();return}
+ if(t.closest('#clearCart')){state.cart={};store.set('cart',state.cart);updateCounts();renderCart();return}
+ if(t.closest('#checkout')){Object.values(state.cart).forEach(it=>window.open(redirect(it.dealID),'_blank','noopener'));return}
+ if(t.closest('[data-close]')||t===$('#modal')){closeGame();return}
+ if(el=t.closest('[data-hero]')){heroIdx=+el.dataset.hero;renderHero();return}
+ if(el=t.closest('[data-preset]')){applyPreset(el.dataset.preset);return}
+ if(el=t.closest('[data-scroll]')){const tr=el.closest('.row').querySelector('.track');tr.scrollBy({left:el.dataset.scroll*tr.clientWidth*.85,behavior:'smooth'});return}
+ if(t.closest('[data-retry]')){state.homeLoaded=false;loadHome();return}
+ if(t.closest('[data-retry-browse]')){loadBrowse(true);return}
+ if(el=t.closest('[data-open]')){location.hash='#/game/'+el.dataset.open;return}
+});
+document.addEventListener('keydown',e=>{
+ if(e.key==='Enter'&&e.target.matches?.('.card[data-open]'))location.hash='#/game/'+e.target.dataset.open;
+ if(e.key==='/'&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();qEl.focus()}
+ if(e.key==='Escape'){if($('#drawer').classList.contains('open'))closeDrawer();else if($('#modal').classList.contains('open'))closeGame()}
+});
+$('#cartBtn').onclick=openDrawer;$('#dClose').onclick=closeDrawer;$('#scrim').onclick=closeDrawer;
+
+/* ---------- Router ---------- */
+function showView(name){
+ if(state.view!==name){
+  ['home','browse','wishlist'].forEach(v=>$('#'+v).hidden=v!==name);
+  state.view=name;window.scrollTo(0,0);
+ }
+ $$('nav a').forEach(a=>a.classList.toggle('on',a.dataset.nav===name));
+ if(name==='home')loadHome();
+ if(name==='browse'){
+  initBrowse();syncFilters();
+  if(state.pendingBrowse||!$('#bGrid').children.length){state.pendingBrowse=false;loadBrowse(true)}
+ }
+ if(name==='wishlist')renderWishlist();
+}
+async function route(){
+ const h=location.hash||'#/';
+ const gm=h.match(/^#\/game\/(\d+)/);
+ if(gm){
+  if(!state.view)showView('home');
+  openGame(gm[1]);return;
+ }
+ closeModalUI();
+ state.last=h;
+ await (state.view?0:loadStores());
+ if(h.startsWith('#/browse'))showView('browse');
+ else if(h.startsWith('#/wishlist'))showView('wishlist');
+ else showView('home');
+}
+window.addEventListener('hashchange',route);
+updateCounts();renderCart();
+route();
+</script>
+</body>
+</html>
