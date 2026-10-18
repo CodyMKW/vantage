@@ -420,18 +420,22 @@ async function get(url,ttl=600){
  const key='vantage:c:'+url.replace(/([?&])key=[^&]*/,'$1key=_');
  try{const c=JSON.parse(sessionStorage.getItem(key)||'null');if(c&&Date.now()-c.t<ttl*1000)return c.d}catch{}
  let r;
- for(let i=0;i<3;i++){
-  r=await fetch(url);
-  if(r.status!==429)break;
-  await sleep(700*(i+1));
+ for(let i=0;i<4;i++){
+  try{
+   r=await fetch(url);
+   if(r.status!==429)break;
+  }catch(err){
+   if(i===3)throw err;
+  }
+  await sleep(1500*(i+1));
  }
- if(!r.ok)throw new Error('HTTP '+r.status);
+ if(!r||!r.ok)throw new Error('HTTP '+(r?.status||'Network'));
  const d=await r.json();
  try{sessionStorage.setItem(key,JSON.stringify({t:Date.now(),d}))}catch{}
  return d;
 }
 const api=(path,ttl)=>get(API+path,ttl);
-const qs=o=>'?'+new URLSearchParams(Object.fromEntries(Object.entries(o).filter(([,v])=>v!==''&&v!=null))).toString();
+const qs=o=>'+new URLSearchParams(Object.fromEntries(Object.entries(o).filter(([,v])=>v!==''&&v!=null))).toString()'?'+'+new URLSearchParams(Object.fromEntries(Object.entries(o).filter(([,v])=>v!==''&&v!=null))).toString():'';
 const norm=d=>({id:d.gameID,dealID:d.dealID,title:d.title||d.external||'Untitled',sale:+d.salePrice,normal:+d.normalPrice,savings:Math.round(+d.savings||0),mc:+d.metacriticScore||0,pct:+d.steamRatingPercent||0,rtext:d.steamRatingText||'',rcount:+d.steamRatingCount||0,app:d.steamAppID||'',release:+d.releaseDate||0,store:d.storeID,thumb:d.thumb||''});
 function dedupe(list){const m=new Map();for(const it of list){const o=m.get(it.id);if(!o||it.sale<o.sale)m.set(it.id,it)}return[...m.values()]}
 function reg(list){list.forEach(it=>{state.items[it.id]={...(state.items[it.id]||{}),...it}});return list}
@@ -505,7 +509,7 @@ function addCart(id){
 
 /* ---------- Extra sources: RAWG (Nintendo catalog) + GamerPower (giveaways) ---------- */
 const RAWG='https://api.rawg.io/api';
-const GP='https://gamerpower.com/api/giveaways';
+const GP='https://www.gamerpower.com/api/giveaways';
 const rawgKey=()=>String(RAWG_KEY||store.get('rawgKey','')||'').trim();
 const rawg=(path,ttl=600)=>get(RAWG+path+(path.includes('?')?'&':'?')+'key='+encodeURIComponent(rawgKey()),ttl);
 const safeUrl=u=>/^https?:\/\//i.test(u||'')?u:'#';
@@ -514,7 +518,22 @@ const rawgImg=(u,w)=>u?u.replace(/\/media\/(?!resize\/|crop\/)/,'/media/resize/'
 const ninArts=(u,w)=>u?[rawgImg(u,w),u]:[];
 const nnorm=g=>({kind:'nin',id:'r'+g.id,rid:g.id,title:g.name||'Untitled',arts:ninArts(g.background_image,640),heroArts:ninArts(g.background_image,1280),mc:+g.metacritic||0,release:g.released||'',genres:(g.genres||[]).map(x=>x.name)});
 const ninSub=it=>[it.release?it.release.slice(0,4):'TBA',(it.genres||[])[0]].filter(Boolean).join(' · ');
-const gpList=async p=>{const r=await get(GP+qs(p),300);return Array.isArray(r)?r:[]};
+const gpList=async p=>{
+ const targetUrl=GP+qs(p);
+ try{
+  const r=await get(targetUrl,300);
+  if(Array.isArray(r))return r;
+ }catch(e){}
+ try{
+  const proxyUrl='https://api.allorigins.win/raw?url='+encodeURIComponent(targetUrl);
+  const res=await fetch(proxyUrl);
+  if(res.ok){
+   const data=await res.json();
+   if(Array.isArray(data))return data;
+  }
+ }catch(err){}
+ return [];
+};
 function endTxt(d){const x=new Date(String(d).replace(' ','T'));return isNaN(x)?'':'Ends '+x.toLocaleDateString(undefined,{month:'short',day:'numeric'})}
 function giveCard(g){
  const worth=g.worth&&g.worth!=='N/A'?g.worth:'';
@@ -585,7 +604,8 @@ async function loadHome(){
  const jobs=ROWS.map(async(r,i)=>{
   await sleep(i*120);
   try{
-   let list=dedupe(reg((await api('/deals'+qs(r.q))).map(norm)));
+   const raw=await api('/deals'+qs(r.q));
+   let list=dedupe(reg((Array.isArray(raw)?raw:[]).map(norm)));
    if(r.filter)list=list.filter(r.filter);
    list=list.filter(it=>it.app||it.thumb).slice(0,20);
    results[r.key]=list;
@@ -599,7 +619,8 @@ async function loadHome(){
  });
  // hero from best data we have
  try{
-  const feat=dedupe(reg((await api('/deals'+qs({pageSize:40,sortBy:'Metacritic',desc:1,onSale:1,metacritic:80,lowerPrice:1}))).map(norm))).filter(i=>i.app&&i.savings>=25);
+  const raw=await api('/deals'+qs({pageSize:40,sortBy:'Metacritic',desc:1,onSale:1,metacritic:80,lowerPrice:1}));
+  const feat=dedupe(reg((Array.isArray(raw)?raw:[]).map(norm))).filter(i=>i.app&&i.savings>=25);
   heroList=feat.sort((a,b)=>b.mc*0.6+b.savings*0.4-(a.mc*0.6+a.savings*0.4)).slice(0,5);
  }catch{}
  await Promise.all(jobs);
@@ -670,6 +691,7 @@ async function loadBrowse(reset){
  try{
   const raw=await api('/deals'+qs(q),300);
   if(tok!==bToken)return;
+  if(!Array.isArray(raw))throw new Error('Invalid response');
   const list=reg(raw.map(norm)).filter(it=>{if(bSeen.has(it.id))return false;bSeen.add(it.id);return true});
   if(reset)$('#bGrid').innerHTML='';
   $('#bGrid').insertAdjacentHTML('beforeend',list.map(it=>card(it)).join(''));
@@ -756,7 +778,7 @@ async function openGame(id){
       <a class="btn sm" href="${redirect(d.dealID)}" target="_blank" rel="noopener">Get ${ICON.ext}</a></div>`).join('')}</div>
    </div>
    <aside class="buy">
-    <div class="bp">${best.savings>0?`<span class="off">-${best.savings}%</span><s>${fmt(best.retail)}</s>`:''}<b>${fmt(best.price)}</b></div>
+    <div class="bp">${best.savings>0?`<span class="off">-${best.savings}\%</span><s>${fmt(best.retail)}</s>`:''}<b>${fmt(best.price)}</b></div>
     <div class="bs">Best price at ${storeLogo(best.store)?`<img src="${esc(storeLogo(best.store))}" alt="">`:''}<b style="color:var(--txt)">${esc(storeName(best.store))}</b></div>
     <a class="btn primary" href="${redirect(best.dealID)}" target="_blank" rel="noopener">${best.price===0?'Claim for free':'Buy now'} ${ICON.ext}</a>
     <button class="btn" data-cart="${esc(id)}">${ICON.cart}Add to cart</button>
@@ -845,8 +867,7 @@ document.addEventListener('click',e=>{
  if(t.closest('[data-retry]')){state.homeLoaded=false;loadHome();return}
  if(t.closest('[data-retry-browse]')){loadBrowse(true);return}
  if(el=t.closest('[data-nin-tab]')){NIN.tab=el.dataset.ninTab;NIN.q='';$('#ninQ').value='';$$('[data-nin-tab]').forEach(b=>b.classList.toggle('on',b===el));loadNin(true);return}
- if(el=t.closest('[data-gp-plat]')){GPS.plat=el.dataset.gpPlat;$$('[data-gp-plat]').forEach(b=>b.classList.toggle('on',b===el));loadFree();return}
- if(el=t.closest('[data-gp-type]')){GPS.type=el.dataset.gpType;$$('[data-gp-type]').forEach(b=>b.classList.toggle('on',b===el));loadFree();return}
+ if(el=t.closest('[data-gp-plat]')){GPS.plat=el.dataset.gpPlat;$$('[data-gp-plat]').forEach(b=>b.classList.toggle('on',b===el));loadFree();return} if(el=t.closest('[data-gp-type]')){GPS.type=el.dataset.gpType;$$('[data-gp-type]').forEach(b=>b.classList.toggle('on',b===el));loadFree();return}
  if(t.closest('[data-retry-nin]')){loadNin(true);return}
  if(t.closest('[data-retry-gp]')){loadFree();return}
  if(t.closest('#rawgSave')){const v=$('#rawgKeyIn').value.trim();if(!v){toast('Paste a key first');return}store.set('rawgKey',v);location.reload();return}
@@ -938,7 +959,7 @@ async function openNin(rid){
   const inW=!!state.wish[id];
   $('#mbox').innerHTML=`
   <div class="mhero">${img(it,'hero')}<button class="x" data-close aria-label="Close">${ICON.x}</button>
-   <div class="in"><h2>${esc(it.title)}</h2><div class="chips">${it.mc?`<span class="chip mc ${mcClass(it.mc)}">Metacritic ${it.mc}</span>`:''}${g.esrb_rating?`<span class="chip">${esc(g.esrb_rating.name)}</span>`:''}${g.rating?`<span class="chip">${esc(g.rating)}/5 · ${(+g.ratings_count||0).toLocaleString()} ratings</span>`:''}</div></div></div>
+   <div class="in"><h2>${esc(it.title)}</h2><div class="chips">${it.mc?`<span class="chip mc ${mcClass(it.mc)}">Metacritic ${it.mc}</span>`:''}${g.esrb_rating?`<span class="chip">${esc(g.esrb_rating.name)}</span>`:''}${g.rating?`<span class="chip">${esc(g.rating)}/5 ·${(+g.ratings_count||0).toLocaleString()} ratings</span>`:''}</div></div></div>
   <div class="mbody">
    <div>
     <div class="facts">
@@ -954,7 +975,7 @@ async function openNin(rid){
    </div>
    <aside class="buy">
     <div class="bs"><b style="color:var(--txt)">Where to buy</b></div>
-    ${links.length?links.map((l,i)=>`<a class="btn ${i===0?'primary':''}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.name)} ${ICON.ext}</a>`).join(''):'<p class="mut small">No store links are listed for this game yet.</p>'}
+    ${links.length?links.map((l,i)=>`<a class="btn ${i===0?'primary':''}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.name)}${ICON.ext}</a>`).join(''):'<p class="mut small">No store links are listed for this game yet.</p>'}
     <p class="mut small">Nintendo sets prices per region on the eShop, so check the store page for today's price.</p>
     <button class="btn ghost ${inW?'on':''}" data-wish="${esc(id)}">${ICON.heart}${inW?'In wishlist':'Add to wishlist'}</button>
     <div class="links">${g.metacritic_url?`<a href="${esc(safeUrl(g.metacritic_url))}" target="_blank" rel="noopener">Metacritic</a>`:''}${g.website?`<a href="${esc(safeUrl(g.website))}" target="_blank" rel="noopener">Official site</a>`:''}</div>
@@ -995,10 +1016,7 @@ async function loadFree(){
 const VIEWS=['home','browse','nintendo','free','wishlist'];
 function showView(name){
  if(state.view!==name){
-  VIEWS.forEach(v=>$('#'+v).hidden=v!==name);
-  state.view=name;window.scrollTo(0,0);
- }
- $$('nav a').forEach(a=>a.classList.toggle('on',a.dataset.nav===name));
+  VIEWS.forEach(v=>$('#'+v).hidden=v!==name); state.view=name;window.scrollTo(0,0); } $$('nav a').forEach(a=>a.classList.toggle('on',a.dataset.nav===name));
  if(name==='home')loadHome();
  if(name==='browse'){
   initBrowse();syncFilters();
