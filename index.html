@@ -425,7 +425,8 @@ footer a{color:var(--acc2)}
 <script>
 /* ---- CONFIG ----
    RAWG_KEY: free key from https://rawg.io/apidocs — powers the Nintendo section.
-   Leave empty to let each visitor paste their own key on the Nintendo page. */
+   Leave empty and store the key on the price Worker instead (secret RAWG_KEY); the page then needs no key.
+   If both are empty, each visitor can paste their own key on the Nintendo page. */
 const RAWG_KEY='';
 /* PRICE_API: URL of your deployed price Worker (see /worker and the README), e.g.
    'https://vantage-prices.YOURNAME.workers.dev' with no trailing slash. It adds live Nintendo
@@ -598,7 +599,12 @@ function addCart(id){
 const RAWG='https://api.rawg.io/api';
 const GP='https://gamerpower.com/api/giveaways';
 const rawgKey=()=>String(RAWG_KEY||store.get('rawgKey','')||'').trim();
-const rawg=(path,ttl=600)=>get(RAWG+path+(path.includes('?')?'&':'?')+'key='+encodeURIComponent(rawgKey()),ttl);
+/* With a key in the page (or one a visitor pasted) calls go straight to RAWG. Otherwise they go through
+   the Worker, which holds the key as a secret, so no key ships in the HTML. */
+const rawgReady=()=>!!(rawgKey()||PRICE_API);
+const rawg=(path,ttl=600)=>rawgKey()
+ ?get(RAWG+path+(path.includes('?')?'&':'?')+'key='+encodeURIComponent(rawgKey()),ttl)
+ :get(PRICE_API+'/rawg'+path,ttl);
 const safeUrl=u=>/^https?:\/\//i.test(u||'')?u:'#';
 const gameHash=id=>String(id).startsWith('r')?'#/nin/'+String(id).slice(1):'#/game/'+id;
 const rawgImg=(u,w)=>u?u.replace(/\/media\/(?!resize\/|crop\/)/,'/media/resize/'+w+'/-/'):'';
@@ -733,7 +739,7 @@ async function loadHome(){
  if(state.homeLoaded)return;state.homeLoaded=true;
  const sh=(id,title,link,wide)=>`<section class="row" id="${id}"><div class="rh"><h2>${title}</h2>${link}<div class="arr"><button data-scroll="-1" aria-label="Scroll left">${ICON.l}</button><button data-scroll="1" aria-label="Scroll right">${ICON.r}</button></div></div><div class="track">${skRow(8,wide)}</div></section>`;
  const rowSh=r=>sh('row-'+r.key,r.title,`<a data-preset="${r.preset}">See all</a>`);
- $('#rows').innerHTML=sh('row-give','Free to claim right now','<a href="#/free">See all</a>',true)+rowSh(ROWS[0])+rowSh(ROWS[1])+(rawgKey()?sh('row-nin','Top rated on Nintendo Switch','<a href="#/nintendo">See all</a>',true):'')+ROWS.slice(2).map(rowSh).join('');
+ $('#rows').innerHTML=sh('row-give','Free to claim right now','<a href="#/free">See all</a>',true)+rowSh(ROWS[0])+rowSh(ROWS[1])+(rawgReady()?sh('row-nin','Top rated on Nintendo Switch','<a href="#/nintendo">See all</a>',true):'')+ROWS.slice(2).map(rowSh).join('');
  loadExtras();
  $('#hero').innerHTML='<div class="hero-main sk"></div><div class="hero-side"></div>';
  const storesP=loadStores();
@@ -1076,7 +1082,7 @@ function initNin(){
  $('#ninMore').onclick=()=>loadNin(false);
 }
 async function loadNin(reset){
- if(!rawgKey()){ninSetup();return}
+ if(!rawgReady()){ninSetup();return}
  $('#ninSetup').hidden=true;$('#ninMain').hidden=false;
  const grid=$('#nGrid');
  grid.className=NIN.view==='list'?'list':'grid wide';
@@ -1099,7 +1105,7 @@ async function loadNin(reset){
   $('#ninMore').hidden=!r.next;NIN.page++;
  }catch(e){
   if(tok!==NIN.tok)return;
-  if(/40[13]/.test(e.message)){ninSetup('RAWG rejected that key. Double-check it and save again.');return}
+  if(/40[13]/.test(e.message)){ninSetup(rawgKey()?'RAWG rejected that key. Double-check it and save again.':'The price Worker has no valid RAWG key. Add RAWG_KEY to it (Settings > Variables and Secrets), or paste a key below.');return}
   if(reset)grid.innerHTML='<div class="err" style="grid-column:1/-1">Couldn\'t load Nintendo games. <button class="btn sm" data-retry-nin>Retry</button></div>';
   else toast('Couldn\'t load more. Try again.');
  }finally{if(tok===NIN.tok){NIN.loading=false;$('#ninMore').disabled=false}}
@@ -1110,7 +1116,7 @@ async function openNin(rid){
  const hint=state.items[id];
  $('#mbox').innerHTML=`<div class="mhero">${hint?img(hint,'hero'):''}<button class="x" data-close aria-label="Close">${ICON.x}</button><div class="in"><h2>${esc(hint?.title||'Loading…')}</h2></div></div><div class="mbody"><div><div class="sk" style="height:90px;margin-bottom:20px"></div><div class="sk" style="height:200px"></div></div><div class="sk" style="height:260px"></div></div>`;
  try{
-  if(!rawgKey())throw new Error('nokey');
+  if(!rawgReady())throw new Error('nokey');
   const [g,st,ss]=await Promise.all([
    rawg('/games/'+rid,3600),
    rawg('/games/'+rid+'/stores',3600).catch(()=>({})),
@@ -1226,7 +1232,7 @@ function showView(name){
   initBrowse();syncFilters();
   if(state.pendingBrowse||!$('#bGrid').children.length){state.pendingBrowse=false;loadBrowse(true)}
  }
- if(name==='nintendo'){initNin();if(!$('#nGrid').children.length||!rawgKey())loadNin(true)}
+ if(name==='nintendo'){initNin();if(!$('#nGrid').children.length||!rawgReady())loadNin(true)}
  if(name==='free'){initFree();if(!$('#gpGrid').children.length)loadFree()}
  if(name==='wishlist')renderWishlist();
 }
