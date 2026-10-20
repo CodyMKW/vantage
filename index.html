@@ -259,7 +259,21 @@ nav.mnav{display:none}
 .keyrow input:focus{border-color:var(--acc)}
 .desc p{color:#c5cbdc;line-height:1.6;margin-bottom:10px}
 .shots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 26px}
-.shots img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;background:var(--panel)}
+.shots img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;background:var(--panel);display:block;transition:transform .2s,filter .2s}
+.shots a{display:block;border-radius:10px;overflow:hidden;cursor:zoom-in}
+.shots a:hover img{transform:scale(1.04);filter:brightness(1.1)}
+.shots a:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.lb{position:fixed;inset:0;z-index:130;display:none;align-items:center;justify-content:center;background:rgba(2,3,6,.94);backdrop-filter:blur(6px);touch-action:pan-y}
+.lb.open{display:flex;animation:fade .15s}
+.lb-stage{display:grid;place-items:center;max-width:94vw;max-height:88vh}
+.lb-stage img{max-width:94vw;max-height:84vh;object-fit:contain;border-radius:10px;box-shadow:0 30px 90px rgba(0,0,0,.7);background:var(--panel)}
+.lb button{position:absolute;display:grid;place-items:center;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:rgba(20,24,34,.85);color:var(--txt);cursor:pointer}
+.lb button:hover{background:var(--panel2)}
+.lb button svg{width:22px;height:22px}
+.lb-x{top:18px;right:18px}.lb-prev{left:18px;top:50%;transform:translateY(-50%)}.lb-next{right:18px;top:50%;transform:translateY(-50%)}
+.lb.single .lb-prev,.lb.single .lb-next{display:none}
+.lb-count{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-size:13px;color:var(--mut);background:rgba(20,24,34,.85);border:1px solid var(--line);padding:5px 12px;border-radius:99px}
+@media(max-width:640px){.lb-prev{left:8px}.lb-next{right:8px}.lb button{width:40px;height:40px}}
 .buy .small{line-height:1.4}
 
 /* nintendo prices, list view, eshop box */
@@ -421,6 +435,13 @@ footer a{color:var(--acc2)}
  <div class="df" id="df"></div>
 </aside>
 <div class="toasts" id="toasts"></div>
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Screenshot viewer">
+ <button class="lb-x" data-lb-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+ <button class="lb-prev" data-lb-step="-1" aria-label="Previous screenshot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+ <div class="lb-stage"><img id="lbImg" alt="Screenshot" onerror="imgFail(this)"></div>
+ <button class="lb-next" data-lb-step="1" aria-label="Next screenshot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+ <div class="lb-count" id="lbCount"></div>
+</div>
 
 <script>
 /* ---- CONFIG ----
@@ -570,7 +591,7 @@ function card(it,extra='',wide=false){
  return `<article class="card ${wide?'wide':''}" tabindex="0" role="button" data-open="${esc(it.id)}" aria-label="${esc(it.title)}">
   <div class="art" data-t="${esc(it.title)}">${img(it,wide?'wide':'card')}${badge}${extra}
    <button class="heart ${w?'on':''}" data-wish="${esc(it.id)}" aria-label="${w?'Remove from':'Add to'} wishlist" title="Wishlist">${ICON.heart}</button></div>
-  <div class="meta"><div class="t" title="${esc(it.title)}">${esc(it.title)}</div><div class="p">${meta}</div>${pr?`<div class="sub">${esc(ninSub(it))}</div>`:''}</div></article>`;
+  <div class="meta"><div class="t" title="${esc(it.title)}">${esc(it.title)}</div><div class="p">${meta}</div>${pr?`<div class="sub" data-sub="${esc(it.id)}">${esc(ninSub(it))}</div>`:''}</div></article>`;
 }
 const skRow=(n,wide)=>Array.from({length:n},()=>`<div class="skcard${wide?' wide':''}"><div class="sk"></div><i class="sk"></i></div>`).join('');
 function updateCounts(){
@@ -610,7 +631,8 @@ const gameHash=id=>String(id).startsWith('r')?'#/nin/'+String(id).slice(1):'#/ga
 const rawgImg=(u,w)=>u?u.replace(/\/media\/(?!resize\/|crop\/)/,'/media/resize/'+w+'/-/'):'';
 const ninArts=(u,w)=>u?[rawgImg(u,w),u]:[];
 const nnorm=g=>({kind:'nin',id:'r'+g.id,rid:g.id,title:g.name||'Untitled',arts:ninArts(g.background_image,640),heroArts:ninArts(g.background_image,1280),mc:+g.metacritic||0,release:g.released||'',genres:(g.genres||[]).map(x=>x.name)});
-const ninSub=it=>[it.release?it.release.slice(0,4):'TBA',(it.genres||[])[0]].filter(Boolean).join(' · ');
+const shortPlat=p=>/switch\s*2/i.test(p||'')?'Switch 2':/switch/i.test(p||'')?'Switch':'';
+const ninSub=it=>[it.release?it.release.slice(0,4):'TBA',(it.genres||[])[0],it.eshop&&it.eshop.platform?shortPlat(it.eshop.platform):''].filter(Boolean).join(' · ');
 
 /* ---------- Nintendo eShop prices (optional; needs the Worker in /worker) ----------
    it.eshop: undefined = lookup pending, null = lookup failed, false = no confident match,
@@ -621,7 +643,7 @@ const salePct=e=>e&&e.sale!=null&&e.regular>0?Math.round((1-e.sale/e.regular)*10
 function eshopOf(res,country){
  if(!res||!res.match)return false;
  const p=res.prices&&res.prices[country||'US'];
- return {nsuid:res.match.nsuid,matched:res.match.title,exact:!!res.match.exact,url:res.match.url||'',status:p?p.status:'not_found',regular:p?p.regular:null,sale:p?p.sale:null,currency:p?p.currency:null,saleEnds:p?p.saleEnds:null};
+ return {nsuid:res.match.nsuid,matched:res.match.title,exact:!!res.match.exact,url:res.match.url||'',image:/^https:\/\//i.test(res.match.image||'')?res.match.image:'',platform:res.match.platform||'',status:p?p.status:'not_found',regular:p?p.regular:null,sale:p?p.sale:null,currency:p?p.currency:null,saleEnds:p?p.saleEnds:null};
 }
 function ninPriceHTML(it){
  const e=it.eshop;
@@ -637,8 +659,23 @@ function ninSaleBadge(it){
  if(!e||e.sale==null||!(e.regular>0))return'';
  return e.sale===0?'<span class="badge free">FREE</span>':`<span class="badge">-${salePct(e)}%</span>`;
 }
+/* The RAWG catalog is the base; the Worker's /lookup match fills gaps (box art when RAWG has none). */
+function eshopArt(it){
+ const e=it.eshop;
+ if(!e||!e.image||(it.arts&&it.arts.length))return;
+ it.arts=[e.image];it.heroArts=[e.image];
+ $$(`[data-open="${it.id}"] .art, [data-open="${it.id}"] .lart`).forEach(a=>{
+  if(a.querySelector('img')&&!a.classList.contains('noimg'))return;
+  a.classList.remove('noimg');a.querySelectorAll('img').forEach(i=>i.remove());
+  a.insertAdjacentHTML('afterbegin',img(it,'card'));
+ });
+ const h=$('#mbox .mhero');
+ if(h&&state.openId===it.id&&!h.querySelector('img'))h.insertAdjacentHTML('afterbegin',img(it,'hero'));
+}
 function applyPrice(id){
  const it=state.items[id];if(!it)return;
+ $$(`[data-sub="${id}"]`).forEach(el=>{el.textContent=ninSub(it)});
+ eshopArt(it);
  $$(`[data-ps="${id}"]`).forEach(el=>{el.innerHTML=ninPriceHTML(it)});
  $$(`[data-sb="${id}"]`).forEach(el=>{el.innerHTML=ninSaleBadge(it)});
 }
@@ -665,7 +702,7 @@ function ninRow(it){
  const id=esc(it.id),w=!!state.wish[it.id];
  return `<article class="lrow" tabindex="0" role="button" data-open="${id}" aria-label="${esc(it.title)}">
   <div class="lart" data-t="${esc(it.title)}">${img(it,'wide')}</div>
-  <div class="linfo"><div class="t" title="${esc(it.title)}">${esc(it.title)}</div><div class="sub">${esc(ninSub(it))}</div></div>
+  <div class="linfo"><div class="t" title="${esc(it.title)}">${esc(it.title)}</div><div class="sub" data-sub="${esc(it.id)}">${esc(ninSub(it))}</div></div>
   <div class="lmc">${it.mc?`<span class="chip mc ${mcClass(it.mc)}" title="Metacritic">${it.mc}</span>`:''}</div>
   <div class="lprice">${PRICE_API?`<span data-sb="${id}">${ninSaleBadge(it)}</span><span class="pslot" data-ps="${id}">${ninPriceHTML(it)}</span>`:''}</div>
   <button class="lheart ${w?'on':''}" data-wish="${id}" aria-label="${w?'Remove from':'Add to'} wishlist" title="Wishlist">${ICON.heart}</button></article>`;
@@ -959,7 +996,7 @@ async function openGame(id){
   $('#mbox').innerHTML=`<div style="padding:60px 30px;text-align:center"><h2 style="margin-bottom:8px">Couldn't load this game</h2><p style="color:var(--mut);margin-bottom:20px">The price service didn't respond. Try again in a moment.</p><button class="btn primary" data-close>Close</button></div>`;
  }
 }
-function closeModalUI(){state.openId=null;$('#modal').classList.remove('open');if(!$('#drawer').classList.contains('open'))document.body.classList.remove('lock')}
+function closeModalUI(){lbClose();state.openId=null;$('#modal').classList.remove('open');if(!$('#drawer').classList.contains('open'))document.body.classList.remove('lock')}
 function closeGame(){location.hash=state.last||'#/'}
 
 /* ---------- Cart ---------- */
@@ -1017,6 +1054,40 @@ function searchAll(){
 }
 document.addEventListener('click',e=>{if(!e.target.closest('.search'))sugEl.classList.remove('open')});
 
+/* ---------- Screenshot lightbox ---------- */
+const LB={list:[],i:0};
+const lbOpenNow=()=>$('#lb').classList.contains('open');
+function lbShow(){
+ const n=LB.list.length,u=LB.list[LB.i];if(!u)return;
+ const im=$('#lbImg');im.parentElement.classList.remove('noimg');im.style.visibility='';
+ im.dataset.f=u.f&&u.f!==u.s?u.f:'';im.src=u.s;
+ $('#lbCount').textContent=(LB.i+1)+' / '+n;$('#lb').classList.toggle('single',n<2);
+}
+function lbOpen(list,i){if(!list||!list.length)return;LB.list=list;LB.i=Math.max(0,Math.min(i,list.length-1));$('#lb').classList.add('open');document.body.classList.add('lock');lbShow();$('.lb-x').focus()}
+function lbClose(){
+ if(!lbOpenNow())return;
+ $('#lb').classList.remove('open');$('#lbImg').removeAttribute('src');
+ if(!$('#modal').classList.contains('open')&&!$('#drawer').classList.contains('open'))document.body.classList.remove('lock');
+}
+function lbStep(d){const n=LB.list.length;if(n<2)return;LB.i=(LB.i+d+n)%n;lbShow()}
+document.addEventListener('keydown',e=>{
+ if(!lbOpenNow())return;
+ if(e.key==='Escape'){lbClose();e.stopImmediatePropagation();e.preventDefault()}
+ else if(e.key==='ArrowLeft'){lbStep(-1);e.preventDefault()}
+ else if(e.key==='ArrowRight'){lbStep(1);e.preventDefault()}
+},true);
+$('#lb').addEventListener('click',e=>{
+ const t=e.target,st=t.closest('[data-lb-step]');
+ if(st){lbStep(+st.dataset.lbStep);return}
+ if(t.closest('[data-lb-close]')||(!t.closest('#lbImg')&&!t.closest('#lbCount')))lbClose();
+});
+let lbX=null;
+$('#lb').addEventListener('touchstart',e=>{lbX=e.touches.length===1?e.touches[0].clientX:null},{passive:true});
+$('#lb').addEventListener('touchend',e=>{
+ if(lbX==null)return;const dx=e.changedTouches[0].clientX-lbX;lbX=null;
+ if(Math.abs(dx)>50)lbStep(dx<0?1:-1);
+},{passive:true});
+
 /* ---------- Global events ---------- */
 document.addEventListener('click',e=>{
  const t=e.target;let el;
@@ -1040,6 +1111,7 @@ document.addEventListener('click',e=>{
  if(t.closest('[data-retry-nin]')){loadNin(true);return}
  if(t.closest('[data-retry-gp]')){loadFree();return}
  if(t.closest('#rawgSave')){const v=$('#rawgKeyIn').value.trim();if(!v){toast('Paste a key first');return}store.set('rawgKey',v);location.reload();return}
+ if(el=t.closest('[data-lb]')){e.preventDefault();lbOpen(state.shots||[],+el.dataset.lb);return}
  if(el=t.closest('[data-open]')){location.hash=gameHash(el.dataset.open);return}
 });
 document.addEventListener('keydown',e=>{
@@ -1074,7 +1146,7 @@ function initNin(){
  $('#ninView').innerHTML=[['grid','Grid'],['list','List']].map(([k,l])=>`<button class="seg ${k===NIN.view?'on':''}" data-nin-view="${k}">${l}</button>`).join('');
  if(PRICE_API){
   $('#ninSub').textContent='The Switch library with ratings, release dates and live Nintendo eShop prices. Open a game for US, Canada and Mexico pricing.';
-  $('#ninCredit').insertAdjacentHTML('beforeend',' · Prices from the Nintendo eShop');
+  $('#ninCredit').insertAdjacentHTML('beforeend',' · Prices, store links and box art from the Nintendo eShop');
  }
  let t;
  $('#ninQ').addEventListener('input',e=>{clearTimeout(t);t=setTimeout(()=>{NIN.q=e.target.value.trim();loadNin(true)},350)});
@@ -1131,7 +1203,9 @@ async function openNin(rid){
   const plats=(g.platforms||[]).map(p=>p.platform&&p.platform.name).filter(Boolean);
   const desc=(g.description_raw||'').trim();
   const descHTML=desc?desc.slice(0,1800).split(/\n+/).filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('')+(desc.length>1800?'<p>…</p>':''):'<p class="mut">No description available.</p>';
-  const shots=(ss.results||[]).slice(0,6).map(s=>`<a href="${esc(safeUrl(s.image))}" target="_blank" rel="noopener"><img src="${esc(rawgImg(s.image,640))}" data-f="${esc(s.image)}" alt="" loading="lazy" onerror="imgFail(this)"></a>`).join('');
+  const shotList=(ss.results||[]).filter(s=>safeUrl(s.image)!=='#').slice(0,6);
+  state.shots=shotList.map(s=>({s:rawgImg(s.image,1280),f:s.image}));
+  const shots=shotList.map((s,i)=>`<a href="${esc(s.image)}" data-lb="${i}" aria-label="View screenshot ${i+1} of ${shotList.length}"><img src="${esc(rawgImg(s.image,640))}" data-f="${esc(s.image)}" alt="${esc(it.title)} screenshot ${i+1}" loading="lazy" onerror="imgFail(this)"></a>`).join('');
   const inW=!!state.wish[id];
   $('#mbox').innerHTML=`
   <div class="mhero">${img(it,'hero')}<button class="x" data-close aria-label="Close">${ICON.x}</button>
@@ -1156,7 +1230,7 @@ async function openNin(rid){
     <p class="mut small">${PRICE_API?'Prices come from the Nintendo eShop and are cached for up to an hour. Confirm on the store page before you buy.':'Nintendo sets prices per region on the eShop, so check the store page for today\'s price.'}</p>
     <button class="btn ghost ${inW?'on':''}" data-wish="${esc(id)}">${ICON.heart}${inW?'In wishlist':'Add to wishlist'}</button>
     <div class="links">${g.metacritic_url?`<a href="${esc(safeUrl(g.metacritic_url))}" target="_blank" rel="noopener">Metacritic</a>`:''}${g.website?`<a href="${esc(safeUrl(g.website))}" target="_blank" rel="noopener">Official site</a>`:''}</div>
-    <div class="low">Game data by <a href="https://rawg.io" target="_blank" rel="noopener" style="color:var(--acc2)">RAWG</a></div>
+    <div class="low">Game data by <a href="https://rawg.io" target="_blank" rel="noopener" style="color:var(--acc2)">RAWG</a>${PRICE_API?' · Prices, store links and box art from the Nintendo eShop':''}</div>
    </aside>
   </div>`;
   if(PRICE_API)fillEshop(id,it.title);
@@ -1187,10 +1261,12 @@ async function fillEshop(id,title){
    return `<div class="rrow"><span>${REGION_NAMES[c]}</span><span>${v}</span></div>`;
   }).join('');
   const link=safeUrl(res.match.url);
-  set(`<div class="rtitle">Nintendo eShop</div>${top}${end}
+  const listed=[res.match.exact?'':'Listed as “'+res.match.title+'”',shortPlat(res.match.platform)?'Nintendo '+shortPlat(res.match.platform):''].filter(Boolean).join(' · ');
+  if(link!=='#')$$('#mbox .buy > a.btn[href*="nintendo.com"]').forEach(a=>a.remove());
+  set(`<div class="rtitle">Nintendo eShop</div>${listed&&res.match.exact?`<div class="mut small">${esc(listed)}</div>`:''}${top}${end}
    ${link!=='#'?`<a class="btn primary" href="${esc(link)}" target="_blank" rel="noopener">View on Nintendo eShop ${ICON.ext}</a>`:''}
    ${rows?`<div>${rows}</div>`:''}
-   ${res.match.exact?'':`<p class="mut small">Matched to “${esc(res.match.title)}”. If that's the wrong game, check the store page.</p>`}`);
+   ${res.match.exact?'':`<p class="mut small">${esc(listed)}. If that's the wrong game, check the store page.</p>`}`);
  }catch(err){
   set('<p class="mut small">Couldn\'t load Nintendo eShop prices right now. The store links below still work.</p>');
  }
